@@ -1,0 +1,4 @@
+[submodule "cs-simple-logger"]
+	path = cs-simple-logger
+	url = https://github.com/NjalNilum/cs-simple-logger.git
+	branch  = master
