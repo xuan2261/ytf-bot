@@ -1,0 +1,47 @@
+{
+  "faceBook": {
+    "email": "email address of account",
+    "pw": "password of account",
+    "groups": [
+      {
+        "groupName": "name of group",
+        "groupId": "id of group"
+      },
+      {
+        "groupName": "name of second group",
+        "groupId": "id of second group"
+      }
+    ]
+  },
+  "telegram": {
+    "bots": [
+      {
+        "botName": "name of a bot",
+        "botToken": "token of a bot"
+      }
+    ],
+    "chats": [
+      {
+        "chatName": "name of chat/channel/group",
+        "chatId": 12345
+      },
+      {
+        "chatName": "name of second chat/channel/group",
+        "chatId": -10012345
+      }
+    ]
+  },
+  "youtube": {
+    "apiKey": "your secret api key",
+    "channels": [
+      {
+        "channelName": "name of channel",
+        "channelId": "id of channel"
+      },
+      {
+        "channelName": "name of second channel",
+        "channelId": "id of second channel"
+      }
+    ]
+  }
+}

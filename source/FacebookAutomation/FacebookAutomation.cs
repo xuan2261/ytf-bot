@@ -17,32 +17,32 @@ namespace FacebookAutomation
         private readonly Logger logger = new("FacebookAutomation");
 
         // css selector to find the cookie accept button
-        private const string StringCookieAccept = "[data-testid = 'cookie-policy-dialog-accept-button']";
-        private static readonly By CssSelectorCookieAccept = By.CssSelector(StringCookieAccept);
+        private static readonly By CssSelectorCookieAccept =
+            By.CssSelector("[data-testid = 'cookie-policy-dialog-accept-button']");
 
         // css selector to find the login button
-        private const string StringLogInButton = "[data-testid = 'royal_login_button']";
-        private static readonly By CssSelectorLogInButton = By.CssSelector(StringLogInButton);
+        private static readonly By CssSelectorLogInButton =
+            By.CssSelector("[data-testid = 'royal_login_button']");
 
         // xpath selector to find element that opens the post to group dialog
-        private const string StringWriteIntoGroup = "//*[contains(text(),'Schreib etwas')]";
-        private static readonly By XPathSelectorWriteIntoGroup = By.XPath(StringWriteIntoGroup);
+        private static readonly By XPathSelectorWriteIntoGroup =
+            By.XPath("//*[contains(text(),'Schreib etwas')]");
 
         // xpath selector to find button post to group
-        private const string StringButtonPostInGroup = "//div[@aria-label='Posten'][@role='button']";
-        private static readonly By XPathSelectorPostInGroup = By.XPath(StringButtonPostInGroup);
+        private static readonly By XPathSelectorPostInGroup =
+            By.XPath("//div[@aria-label='Posten'][@role='button']");
 
         // xpath selector for youtube preview
-        private const string StringYoutubePreviewBox = "//a[@role='link'][contains(.,'youtube')]";
-        private static readonly By XPathSelectorYoutubePreviewBox = By.XPath(StringYoutubePreviewBox);
+        private static readonly By XPathSelectorYoutubePreviewBox =
+            By.XPath("//a[@role='link'][contains(.,'youtube')]");
 
         // id selector to find input box for email
-        private const string StringEmail = "email";
-        private static readonly By IdSelectorEmail = By.Id(StringEmail);
+        private static readonly By IdSelectorEmail =
+            By.Id("email");
 
         // id selector to find input box for password
-        private const string StringPassword = "pass";
-        private static readonly By IdSelectorPassword = By.Id(StringPassword);
+        private static readonly By IdSelectorPassword =
+            By.Id("pass");
 
         // WebDriver within browser and all test functionality
         private readonly IWebDriver webDriver;
