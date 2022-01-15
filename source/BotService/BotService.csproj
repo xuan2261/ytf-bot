@@ -10,6 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\cs-simple-logger\Source\SimpleLogger.csproj" />
     <ProjectReference Include="..\FacebookAutomation\FacebookAutomation.csproj" />
+    <ProjectReference Include="..\TelegramApi\TelegramApi.csproj" />
+    <ProjectReference Include="..\YoutubeApi\YoutubeApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>
