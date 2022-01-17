@@ -41,8 +41,9 @@ namespace YoutubeApi
         /// 
         /// </summary>
         /// <param name="channelId"></param>
-        public async void ReadChannelList(string channelId, int maxResults)
+        public async Task<YtVideos> ReadChannelList(string channelId, int maxResults)
         {
+            var newestChannelVideos = new YtVideos();
             try
             {
                 var searchListRequest = this.youtubeService.Search.List("snippet");
@@ -64,9 +65,23 @@ namespace YoutubeApi
                         videoRequest.Id = searchResult.Id.VideoId;
                         var result = videoRequest.Execute();
 
-                        foreach (var video in result.Items)
+                        foreach (var channelVideo in result.Items)
                         {
+                            var newVideo = new Video
+                                           {
+                                               Title = channelVideo.Snippet.Title,
+                                               Id = channelVideo.Id,
+                                               ChannelId = channelVideo.Snippet.ChannelId,
+                                               ChannelTitle = channelVideo.Snippet.ChannelTitle,
+                                               Description = channelVideo.Snippet.Description
+                                           };
 
+                            if (channelVideo.Snippet.PublishedAt != null)
+                            {
+                                newVideo.PublishedAtRaw = channelVideo.Snippet.PublishedAt.Value;
+                            }
+
+                            newestChannelVideos.Videos.Add(newVideo);
                         }
                     }
                 }
@@ -76,6 +91,8 @@ namespace YoutubeApi
                 this.logger.LogError(e.Message);
                 throw;
             }
+
+            return newestChannelVideos;
         }
     }
 }

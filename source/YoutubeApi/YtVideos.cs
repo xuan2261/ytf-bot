@@ -3,21 +3,39 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace YoutubeApi
 {
-    internal class YtVideos
+    public class YtVideos
     {
-        public List<Video> videos { get; set; }
+        [JsonProperty("videos")]
+        public List<Video> Videos { get; set; }
+
+        public YtVideos(int capacity=10)
+        {
+            this.Videos = new List<Video>(capacity);
+        }
     }
 
     public class Video
     {
-        public string title { get; set; }
-        public string id { get; set; }
-        public DateTime PublishedArRaw { get; set; }
+        [JsonProperty("title")]
+        public string Title { get; set; }
+        
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("publishedAtRaw")]
+        public DateTime PublishedAtRaw { get; set; }
+
+        [JsonProperty("channelId")]
         public string ChannelId { get; set; }
+
+        [JsonProperty("channelTitle")]
         public string ChannelTitle { get; set; }
+
+        [JsonProperty("description")]
         public string Description { get; set; }
     }
 }

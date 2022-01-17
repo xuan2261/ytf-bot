@@ -15,8 +15,11 @@ var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
 
 var youtubeApi = new YoutubeApi.YoutubeApi("thyTopBot", botConfig.Youtube.ApiKey, myLogger);
 
-youtubeApi.ReadChannelList(botConfig.Youtube.Channels[0].ChannelId, 5);
+var itsMe = youtubeApi.ReadChannelList(botConfig.Youtube.Channels[0].ChannelId, 5);
 
+Console.WriteLine("Async weiter oder ed?");
 
+var egal = itsMe.Result;
 
+Console.WriteLine("Noch result");
 Console.ReadKey();
