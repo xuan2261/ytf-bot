@@ -41,7 +41,7 @@ namespace YoutubeApi
         /// 
         /// </summary>
         /// <param name="channelId"></param>
-        public async void ReadChannelList(string channelId)
+        public async void ReadChannelList(string channelId, int maxResults)
         {
             try
             {
@@ -49,7 +49,7 @@ namespace YoutubeApi
                 searchListRequest.ChannelId = channelId;
                 searchListRequest.Type = "video";
                 searchListRequest.Order = SearchResource.ListRequest.OrderEnum.Date;
-                searchListRequest.MaxResults = 10;
+                searchListRequest.MaxResults = maxResults;
 
                 // Call the search.list method to retrieve results matching the specified query term.
                 var searchListResponse = await searchListRequest.ExecuteAsync();

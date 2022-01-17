@@ -15,7 +15,7 @@ var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
 
 var youtubeApi = new YoutubeApi.YoutubeApi("thyTopBot", botConfig.Youtube.ApiKey, myLogger);
 
-youtubeApi.ReadChannelList(botConfig.Youtube.Channels[0].ChannelId);
+youtubeApi.ReadChannelList(botConfig.Youtube.Channels[0].ChannelId, 5);
 
 
 
