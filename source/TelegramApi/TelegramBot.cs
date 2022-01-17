@@ -5,16 +5,16 @@ using Telegram.Bot.Types;
 namespace TelegramApi
 {
     /// <summary>
-    /// Class provides functionality to acces tot telegram chats ans send messages.
+    /// Class provides functionality to access to telegram chats and send messages.
     /// One instance per bot is needed, so this api may may be more a bot client wrapper.
     ///
     /// Understand that you need to add your bot to chats and groups for sending messages.
     /// </summary>
-    public class TelegramApi
+    public class TelegramBot
     {
-        private readonly Logger logger = new("TelegramApi");
+        private readonly Logger logger = new("TelegramBot");
 
-        private readonly TelegramBotClient? telegramBotClient;
+        private readonly TelegramBotClient telegramBotClient;
         private readonly AutoResetEvent autoResetForSendMessage = new AutoResetEvent(false);
 
         /// <summary>
@@ -22,12 +22,12 @@ namespace TelegramApi
         /// Creates a bit client with your private token
         /// </summary>
         /// <param name="privateBotApiToken"></param>
-        /// <param name="logger"></param>
-        public TelegramApi(string privateBotApiToken, Logger? logger = null)
+        /// <param name="theLogger"></param>
+        public TelegramBot(string privateBotApiToken, Logger? theLogger = null)
         {
-            if (logger != null)
+            if (theLogger != null)
             {
-                this.logger = logger;
+                this.logger = theLogger;
             }
 
             try
@@ -37,6 +37,7 @@ namespace TelegramApi
             catch (Exception e)
             {
                 this.logger.LogError(e.Message);
+                throw;
             }
         }
 
@@ -61,7 +62,7 @@ namespace TelegramApi
                     this.logger.LogError($"TelegramApi timeOut when sending message '{messageToPublish}' to channel '{chatId}'");
                     cancellationTokenSource.Cancel();
                 }
-
+                this.logger.LogInfo($"To Telegram chat '{chatId}' was sent message '{messageToPublish}'");
             }
             catch (Exception e)
             {
@@ -71,23 +72,20 @@ namespace TelegramApi
         }
 
         /// <summary>
-        /// Internal helper to send/publish message.
+        /// Internal helper to send/publish a message in a cuat/group/channel.
         /// The Telegram Api documentation is unfortunately very imprecise. It is also not at all clear what is in 'message' if publishing
         /// did not work. 
         /// </summary>
         private async Task InternalSendMessageToChatAsync(long chatId, string messageToPublish, CancellationToken cts)
         {
-            if (this.telegramBotClient != null)
-            {
-                var sentMessage = await this.telegramBotClient.SendTextMessageAsync(
-                                      chatId: new ChatId(chatId),
-                                      text: messageToPublish,
-                                      cancellationToken: cts);
+            var sentMessage = await this.telegramBotClient.SendTextMessageAsync(
+                                  chatId: new ChatId(chatId),
+                                  text: messageToPublish,
+                                  cancellationToken: cts);
 
-                if (sentMessage.Text == null)
-                {
-                    this.logger.LogError("TelegramApi method 'SendTextMessageAsync' returned null. No message was sent to chat");
-                }
+            if (sentMessage.Text == null)
+            {
+                this.logger.LogError("TelegramApi method 'SendTextMessageAsync' returned null. No message was sent to chat");
             }
 
             this.autoResetForSendMessage.Set();

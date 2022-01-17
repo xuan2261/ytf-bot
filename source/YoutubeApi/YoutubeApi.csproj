@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.55.0.2449" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\cs-simple-logger\Source\SimpleLogger.csproj" />
   </ItemGroup>
 

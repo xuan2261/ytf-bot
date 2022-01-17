@@ -51,11 +51,11 @@ namespace FacebookAutomation
         /// Ctor.
         /// Initiate the webDriver.
         /// </summary>
-        public FacebookAutomation(Logger logger = null)
+        public FacebookAutomation(Logger theLogger = null)
         {
-            if (logger != null)
+            if (theLogger != null)
             {
-                this.logger = logger;
+                this.logger = theLogger;
             }
 
             try

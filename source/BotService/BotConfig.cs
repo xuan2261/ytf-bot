@@ -1,82 +1,106 @@
 ﻿using Newtonsoft.Json;
+using SimpleLogger;
 
 namespace BotService
 {
     public class Group
     {
         [JsonProperty("groupName")]
-        public string? GroupName { get; set; }
+        public string GroupName { get; set; }
 
         [JsonProperty("groupId")]
-        public string? GroupId { get; set; }
+        public string GroupId { get; set; }
     }
 
     public class FaceBook
     {
         [JsonProperty("email")]
-        public string? Email { get; set; }
+        public string Email { get; set; }
 
         [JsonProperty("pw")]
-        public string? Pw { get; set; }
+        public string Pw { get; set; }
 
         [JsonProperty("groups")]
-        public List<Group>? Groups { get; set; }
+        public List<Group> Groups { get; set; }
     }
 
     public class Bot
     {
         [JsonProperty("botName")]
-        public string? BotName { get; set; }
+        public string BotName { get; set; }
 
         [JsonProperty("botToken")]
-        public string? BotToken { get; set; }
+        public string BotToken { get; set; }
     }
 
     public class Chat
     {
         [JsonProperty("chatName")]
-        public string? ChatName { get; set; }
+        public string ChatName { get; set; }
 
         [JsonProperty("chatId")]
-        public long? ChatId { get; set; }
+        public long ChatId { get; set; }
     }
 
     public class Telegram
     {
         [JsonProperty("bots")]
-        public List<Bot>? Bots { get; set; }
+        public List<Bot> Bots { get; set; }
 
         [JsonProperty("chats")]
-        public List<Chat>? Chats { get; set; }
+        public List<Chat> Chats { get; set; }
     }
 
     public class Channel
     {
         [JsonProperty("channelName")]
-        public string? ChannelName { get; set; }
+        public string ChannelName { get; set; }
 
         [JsonProperty("channelId")]
-        public string? ChannelId { get; set; }
+        public string ChannelId { get; set; }
     }
 
     public class Youtube
     {
         [JsonProperty("apiKey")]
-        public string? ApiKey { get; set; }
+        public string ApiKey { get; set; }
 
         [JsonProperty("channels")]
-        public List<Channel>? Channels { get; set; }
+        public List<Channel> Channels { get; set; }
     }
 
     public class BotConfig
     {
         [JsonProperty("faceBook")]
-        public FaceBook? FaceBook { get; set; }
+        public FaceBook FaceBook { get; set; }
 
         [JsonProperty("telegram")]
-        public Telegram? Telegram { get; set; }
+        public Telegram Telegram { get; set; }
 
         [JsonProperty("youtube")]
-        public Youtube? Youtube { get; set; }
+        public Youtube Youtube { get; set; }
+
+        /// <summary>
+        /// Read the application config from json file.
+        /// </summary>
+        /// <param name="pathToSjonFile"></param>
+        /// <param name="logger"></param>
+        /// <returns></returns>
+        public static BotConfig LoadFromJsonFile(string pathToSjonFile, Logger? logger = null)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText(pathToSjonFile));
+            }
+            catch (Exception e)
+            {
+                if (logger != null)
+                {
+                    logger.LogError($"Erroir when reading json file '{pathToSjonFile}'. Exception: {e.Message}");
+                }
+
+                throw;
+            }
+        }
     }
 }
