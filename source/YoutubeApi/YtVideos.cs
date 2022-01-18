@@ -16,6 +16,12 @@ namespace YoutubeApi
         {
             this.Videos = new List<Video>(capacity);
         }
+
+        public static void SerializeObject(YtVideos videosToSerialize)
+        {
+            var json = JsonConvert.SerializeObject(videosToSerialize);
+            File.WriteAllText(@"youtubeVideos.json", json);
+        }
     }
 
     public class Video

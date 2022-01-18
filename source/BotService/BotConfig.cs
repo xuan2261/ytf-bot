@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
 using SimpleLogger;
 
 namespace BotService
@@ -90,15 +91,19 @@ namespace BotService
         {
             try
             {
-                return JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText(pathToSjonFile));
+                var result = JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText(pathToSjonFile));
+                if (result != null)
+                {
+                    return result;
+                }
+
+                logger?.LogError($"Could not deserialize config file '{pathToSjonFile}'.");
+                throw new SerializationException($"Could not deserialize config file '{pathToSjonFile}'.");
+
             }
             catch (Exception e)
             {
-                if (logger != null)
-                {
-                    logger.LogError($"Erroir when reading json file '{pathToSjonFile}'. Exception: {e.Message}");
-                }
-
+                logger?.LogError($"Error when reading json file '{pathToSjonFile}'. Exception: {e.Message}");
                 throw;
             }
         }

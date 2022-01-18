@@ -38,12 +38,14 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// 
+        /// Returns the newest and a maximum of 'maxResults' videos of the channel channelId.
         /// </summary>
-        /// <param name="channelId"></param>
-        public async Task<YtVideos> ReadChannelList(string channelId, int maxResults)
+        /// <param name="channelId">Id of channel</param>
+        /// <param name="maxResults">Maximum amount of videos</param>
+        /// <returns>List of videos</returns>
+        public async Task<List<Video>> GetVideosOfChannel(string channelId, int maxResults)
         {
-            var newestChannelVideos = new YtVideos();
+            var listOfChannelVideos = new List<Video>();
             try
             {
                 var searchListRequest = this.youtubeService.Search.List("snippet");
@@ -63,25 +65,25 @@ namespace YoutubeApi
                     {
                         var videoRequest = youtubeService.Videos.List("snippet");
                         videoRequest.Id = searchResult.Id.VideoId;
-                        var result = videoRequest.Execute();
+                        var result = await videoRequest.ExecuteAsync();
 
                         foreach (var channelVideo in result.Items)
                         {
                             var newVideo = new Video
-                                           {
-                                               Title = channelVideo.Snippet.Title,
-                                               Id = channelVideo.Id,
-                                               ChannelId = channelVideo.Snippet.ChannelId,
-                                               ChannelTitle = channelVideo.Snippet.ChannelTitle,
-                                               Description = channelVideo.Snippet.Description
-                                           };
+                            {
+                                Title = channelVideo.Snippet.Title,
+                                Id = channelVideo.Id,
+                                ChannelId = channelVideo.Snippet.ChannelId,
+                                ChannelTitle = channelVideo.Snippet.ChannelTitle,
+                                Description = channelVideo.Snippet.Description
+                            };
 
                             if (channelVideo.Snippet.PublishedAt != null)
                             {
                                 newVideo.PublishedAtRaw = channelVideo.Snippet.PublishedAt.Value;
                             }
 
-                            newestChannelVideos.Videos.Add(newVideo);
+                            listOfChannelVideos.Add(newVideo);
                         }
                     }
                 }
@@ -92,7 +94,28 @@ namespace YoutubeApi
                 throw;
             }
 
-            return newestChannelVideos;
+            return listOfChannelVideos;
+        }
+
+        public void CreateVideoFile(List<string> channelIds, int maximumResult)
+        {
+
+            var tasks = channelIds.Select(channelId => GetVideosOfChannel(channelId, maximumResult)).ToArray();
+            Task.WaitAll(tasks);
+
+            var listOfVideoLists = tasks.Select(task => task.Result);
+            List<Video> completeVideoList = new List<Video>(maximumResult * channelIds.Count);
+            foreach (var videos in listOfVideoLists)
+            {
+                completeVideoList.AddRange(videos);
+            }
+
+            var myVideos = new YtVideos
+            {
+                Videos = completeVideoList
+            };
+
+            YtVideos.SerializeObject(myVideos);
         }
     }
 }
