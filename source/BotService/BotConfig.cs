@@ -1,84 +1,85 @@
 ﻿using System.Runtime.Serialization;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 using SimpleLogger;
 
 namespace BotService
 {
     public class Group
     {
-        [JsonProperty("groupName")]
+        [JsonPropertyName("groupName")]
         public string GroupName { get; set; }
 
-        [JsonProperty("groupId")]
+        [JsonPropertyName("groupId")]
         public string GroupId { get; set; }
     }
 
     public class FaceBook
     {
-        [JsonProperty("email")]
+        [JsonPropertyName("email")]
         public string Email { get; set; }
 
-        [JsonProperty("pw")]
+        [JsonPropertyName("pw")]
         public string Pw { get; set; }
 
-        [JsonProperty("groups")]
+        [JsonPropertyName("groups")]
         public List<Group> Groups { get; set; }
     }
 
     public class Bot
     {
-        [JsonProperty("botName")]
+        [JsonPropertyName("botName")]
         public string BotName { get; set; }
 
-        [JsonProperty("botToken")]
+        [JsonPropertyName("botToken")]
         public string BotToken { get; set; }
     }
 
     public class Chat
     {
-        [JsonProperty("chatName")]
+        [JsonPropertyName("chatName")]
         public string ChatName { get; set; }
 
-        [JsonProperty("chatId")]
+        [JsonPropertyName("chatId")]
         public long ChatId { get; set; }
     }
 
     public class Telegram
     {
-        [JsonProperty("bots")]
+        [JsonPropertyName("bots")]
         public List<Bot> Bots { get; set; }
 
-        [JsonProperty("chats")]
+        [JsonPropertyName("chats")]
         public List<Chat> Chats { get; set; }
     }
 
     public class Channel
     {
-        [JsonProperty("channelName")]
+        [JsonPropertyName("channelName")]
         public string ChannelName { get; set; }
 
-        [JsonProperty("channelId")]
+        [JsonPropertyName("channelId")]
         public string ChannelId { get; set; }
     }
 
     public class Youtube
     {
-        [JsonProperty("apiKey")]
+        [JsonPropertyName("apiKey")]
         public string ApiKey { get; set; }
 
-        [JsonProperty("channels")]
+        [JsonPropertyName("channels")]
         public List<Channel> Channels { get; set; }
     }
 
     public class BotConfig
     {
-        [JsonProperty("faceBook")]
+        [JsonPropertyName("faceBook")]
         public FaceBook FaceBook { get; set; }
 
-        [JsonProperty("telegram")]
+        [JsonPropertyName("telegram")]
         public Telegram Telegram { get; set; }
 
-        [JsonProperty("youtube")]
+        [JsonPropertyName("youtube")]
         public Youtube Youtube { get; set; }
 
         /// <summary>
@@ -91,7 +92,7 @@ namespace BotService
         {
             try
             {
-                var result = JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText(pathToSjonFile));
+                var result = JsonSerializer.Deserialize<BotConfig>(File.ReadAllText(pathToSjonFile));
                 if (result != null)
                 {
                     return result;

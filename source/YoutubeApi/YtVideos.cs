@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using Newtonsoft.Json;
 
 namespace YoutubeApi
@@ -26,6 +22,18 @@ namespace YoutubeApi
 
     public class Video
     {
+        private string description;
+
+        public Video()
+        {
+            Title = string.Empty;
+            Id = string.Empty;
+            PublishedAtRaw = DateTime.MinValue;
+            ChannelId = string.Empty;
+            ChannelTitle = string.Empty;
+            this.description = string.Empty;
+        }
+
         [JsonProperty("title")]
         public string Title { get; set; }
         
@@ -42,6 +50,22 @@ namespace YoutubeApi
         public string ChannelTitle { get; set; }
 
         [JsonProperty("description")]
-        public string Description { get; set; }
+        public string Description
+        {
+            get => Base64Decode(this.description);
+            set => this.description = Base64Encode(value);
+        }
+
+        private static string Base64Encode(string plainText)
+        {
+            var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
+            return Convert.ToBase64String(plainTextBytes);
+        }
+
+        private static string Base64Decode(string base64EncodedData)
+        {
+            var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
+            return Encoding.UTF8.GetString(base64EncodedBytes);
+        }
     }
 }

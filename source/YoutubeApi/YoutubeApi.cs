@@ -10,16 +10,21 @@ namespace YoutubeApi
         private readonly Logger logger = new("YoutubeApi");
 
         /// <summary>
-        /// 
+        /// Ctor.
+        /// Initiates the YoutubeService.
         /// </summary>
-        /// <param name="applicationName"></param>
-        /// <param name="apiKey"></param>
-        /// <param name="theLogger"></param>
+        /// <param name="applicationName">Name of application (irrelevant)</param>
+        /// <param name="apiKey">Secret api key</param>
+        /// <param name="theLogger">Logger if available</param>
         public YoutubeApi(string applicationName, string apiKey, Logger? theLogger = null)
         {
             if (theLogger != null)
             {
                 this.logger = theLogger;
+            }
+            else
+            {
+                this.logger = new Logger("YoutubeApi.log");
             }
 
             try
