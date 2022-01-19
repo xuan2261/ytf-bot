@@ -12,7 +12,7 @@ namespace TelegramApi
     /// </summary>
     public class TelegramBot
     {
-        private readonly Logger logger = new("TelegramBot");
+        private readonly Logger logger;
 
         private readonly TelegramBotClient telegramBotClient;
         private readonly AutoResetEvent autoResetForSendMessage = new AutoResetEvent(false);
@@ -25,10 +25,7 @@ namespace TelegramApi
         /// <param name="theLogger"></param>
         public TelegramBot(string privateBotApiToken, Logger? theLogger = null)
         {
-            if (theLogger != null)
-            {
-                this.logger = theLogger;
-            }
+            this.logger = theLogger ?? new Logger("TelegramBot.log");
 
             try
             {

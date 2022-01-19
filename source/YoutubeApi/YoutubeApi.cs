@@ -18,14 +18,7 @@ namespace YoutubeApi
         /// <param name="theLogger">Logger if available</param>
         public YoutubeApi(string applicationName, string apiKey, Logger? theLogger = null)
         {
-            if (theLogger != null)
-            {
-                this.logger = theLogger;
-            }
-            else
-            {
-                this.logger = new Logger("YoutubeApi.log");
-            }
+            this.logger = theLogger ?? new Logger("YoutubeApi.log");
 
             try
             {
@@ -48,7 +41,7 @@ namespace YoutubeApi
         /// <param name="channelId">Id of channel</param>
         /// <param name="maxResults">Maximum amount of videos</param>
         /// <returns>List of videos</returns>
-        public async Task<List<Video>> GetVideosOfChannel(string channelId, int maxResults)
+        private async Task<List<Video>> GetVideosOfChannel(string channelId, int maxResults)
         {
             var listOfChannelVideos = new List<Video>();
             try
@@ -102,6 +95,11 @@ namespace YoutubeApi
             return listOfChannelVideos;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="channelIds"></param>
+        /// <param name="maximumResult"></param>
         public void CreateVideoFile(List<string> channelIds, int maximumResult)
         {
 
@@ -120,7 +118,7 @@ namespace YoutubeApi
                 Videos = completeVideoList
             };
 
-            YtVideos.SerializeObject(myVideos);
+            YtVideos.Serialize(myVideos);
         }
     }
 }

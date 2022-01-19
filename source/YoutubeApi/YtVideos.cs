@@ -1,11 +1,12 @@
 ﻿using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace YoutubeApi
 {
     public class YtVideos
     {
-        [JsonProperty("videos")]
+        [JsonPropertyName("videos")]
         public List<Video> Videos { get; set; }
 
         public YtVideos(int capacity=10)
@@ -13,20 +14,26 @@ namespace YoutubeApi
             this.Videos = new List<Video>(capacity);
         }
 
-        public static void SerializeObject(YtVideos videosToSerialize)
+        public static void Serialize(YtVideos videosToSerialize)
         {
-            var json = JsonConvert.SerializeObject(videosToSerialize);
+            var json = JsonSerializer.Serialize(videosToSerialize);
             File.WriteAllText(@"youtubeVideos.json", json);
+        }
+
+        public static YtVideos? Deserialize(string pathToJsonFile)
+        {
+            return JsonSerializer.Deserialize<YtVideos>(File.ReadAllText(pathToJsonFile));
         }
     }
 
     public class Video
     {
         private string description;
+        private string title;
 
         public Video()
         {
-            Title = string.Empty;
+            this.title = string.Empty;
             Id = string.Empty;
             PublishedAtRaw = DateTime.MinValue;
             ChannelId = string.Empty;
@@ -34,22 +41,26 @@ namespace YoutubeApi
             this.description = string.Empty;
         }
 
-        [JsonProperty("title")]
-        public string Title { get; set; }
-        
-        [JsonProperty("id")]
+        [JsonPropertyName("title")]
+        public string Title
+        {
+            get => Base64Decode(this.title);
+            set => this.title = Base64Encode(value);
+        }
+
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
-        [JsonProperty("publishedAtRaw")]
+        [JsonPropertyName("publishedAtRaw")]
         public DateTime PublishedAtRaw { get; set; }
 
-        [JsonProperty("channelId")]
+        [JsonPropertyName("channelId")]
         public string ChannelId { get; set; }
 
-        [JsonProperty("channelTitle")]
+        [JsonPropertyName("channelTitle")]
         public string ChannelTitle { get; set; }
 
-        [JsonProperty("description")]
+        [JsonPropertyName("description")]
         public string Description
         {
             get => Base64Decode(this.description);
