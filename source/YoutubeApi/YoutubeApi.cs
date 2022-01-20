@@ -1,4 +1,5 @@
-﻿using Google.Apis.Services;
+﻿using System.Globalization;
+using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using SimpleLogger;
 
@@ -7,7 +8,7 @@ namespace YoutubeApi
     public class YoutubeApi
     {
         private readonly YouTubeService youtubeService;
-        private readonly Logger logger = new("YoutubeApi");
+        private readonly Logger logger;
 
         /// <summary>
         /// Ctor.
@@ -38,10 +39,15 @@ namespace YoutubeApi
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="channelId">Id of channel</param>
-        /// <param name="maxResults">Maximum amount of videos</param>
-        /// <returns>List of videos</returns>
-        private async Task<List<VideoMetaDataFull>> GetFullVideoMetaDatasOfChannel(string channelId, int maxResults)
+        /// <param name="channelId"></param>
+        /// <param name="publishedAfter"></param>
+        /// <param name="maxResults"></param>
+        /// <param name="listOfExcludedVideos"></param>
+        /// <returns></returns>
+        private async Task<List<VideoMetaDataFull>> GetFullVideoMetaDatasOfChannel(string channelId, 
+                                                                                   DateTime publishedAfter, 
+                                                                                   int maxResults, 
+                                                                                   List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             var listOfChannelVideos = new List<VideoMetaDataFull>();
             try
@@ -51,9 +57,12 @@ namespace YoutubeApi
                 searchListRequest.Type = "video";
                 searchListRequest.Order = SearchResource.ListRequest.OrderEnum.Date;
                 searchListRequest.MaxResults = maxResults;
+                //searchListRequest.PublishedAfter = publishedAfter.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                searchListRequest.PublishedAfter = "2022-01-20T14:00:13Z";
 
                 // Call the search.list method to retrieve results matching the specified query term.
                 var searchListResponse = await searchListRequest.ExecuteAsync();
+
 
                 // Add each result to the appropriate list, and then display the lists of
                 // matching videos, channels, and playlists.
@@ -100,9 +109,9 @@ namespace YoutubeApi
         /// </summary>
         /// <param name="channelIds"></param>
         /// <param name="maximumResult"></param>
-        public void CreateVideoFile(List<string> channelIds, int maximumResult)
+        public void CreateVideoFile(List<string> channelIds, DateTime publishedAfter, int maximumResult, List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
-            var tasks = channelIds.Select(channelId => GetFullVideoMetaDatasOfChannel(channelId, maximumResult)).ToArray();
+            var tasks = channelIds.Select(channelId => GetFullVideoMetaDatasOfChannel(channelId, publishedAfter, maximumResult, listOfExcludedVideos)).ToArray();
             Task.WaitAll(tasks);
 
             var listOfVideoLists = tasks.Select(task => task.Result);

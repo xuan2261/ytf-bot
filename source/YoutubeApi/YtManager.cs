@@ -9,7 +9,7 @@ namespace YoutubeApi
         private readonly YoutubeApi youtubeApi;
         private readonly Logger logger;
         private readonly string dateTimeFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "youtubeStartUp.json");
-        private DateTime lastCheckSuccessful;
+        private DateTime lastCheckSuccessfulZulu;
 
 
         /// <remarks>
@@ -19,7 +19,6 @@ namespace YoutubeApi
         public YtManager(string apiKey, Logger? theLogger = null)
         {
             this.logger = theLogger ?? new Logger("YoutubeApi.log");
-            //GetFullVideoMetaData();
             try
             {
                 GetLastSuccessfulCheckFromFile();
@@ -32,45 +31,42 @@ namespace YoutubeApi
             }
         }
 
-
-        public List<VideoMetaDataFull> GetFullVideoMetaData(List<string> channelIds, List<VideoMetaDataSmall> listOfExcludedVideos)
+        /// <summary>
+        /// This method returns a list within all metadata of videos that were published in the channels in 'channelIds'.
+        /// In addition, the result is written to a Json file.
+        /// </summary>
+        /// <param name="channelIds">Channels that are searched</param>
+        /// <param name="listOfExcludedVideos">Filter criterion. The videos in this list should not be included in the result.</param>
+        /// <returns>The compiled list of videos is returned and written to a file.</returns>
+        public void StartFullVideoMetaDataWorker(List<string> channelIds, List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             var listOfFullVideoMetaData = new List<VideoMetaDataFull>();
 
-            // nts. Diedes Liste sollte die Videos enthalten, die ausgeschlossen werden --> Filterkriterium
-            // Der Zeitstempel dieser App sollte das zweite Filterkriterium sein und zwar nicht ab Start, sondern immer dann gesetzt wenn Arbeit verrichtet wurde.
-            var detectedVideos = new List<VideoMetaDataSmall>();
-            for (int i = 0; i < 5; i++)
-            {
-                detectedVideos.Add(new VideoMetaDataSmall
-                {
-                    Id = i.ToString(),
-                    DetectedAt = DateTime.UtcNow,
-                    Title = $"{i:000}"
-                });
-            }
+           this.youtubeApi.CreateVideoFile(channelIds, this.lastCheckSuccessfulZulu, 10);
+           
 
-            File.WriteAllText("aaaa.json", JsonSerializer.Serialize(detectedVideos));
-            return listOfFullVideoMetaData;
+            File.WriteAllText("aaaa.json", JsonSerializer.Serialize(listOfFullVideoMetaData));
         }
 
         /// <summary>
         /// To create the list of published videos, we only look at the videos that have been published since the last successful check.
-        /// This method reads the datetime of the lasst successful check for new videos from a file and stores it into 'this.lastCheckSuccessful'.
+        /// This method reads the datetime of the lasst successful check for new videos from a file and stores it into 'this.lastCheckSuccessfulZulu'.
+        /// Note: Zulu time.
         /// </summary>
         private void GetLastSuccessfulCheckFromFile()
         {
-            this.lastCheckSuccessful = File.Exists(this.dateTimeFile) ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText(this.dateTimeFile)) : DateTime.UtcNow;
+            this.lastCheckSuccessfulZulu = File.Exists(this.dateTimeFile) ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText(this.dateTimeFile)) : DateTime.UtcNow;
         }
 
         /// <summary>
         /// Each time the list of new videos is successfully read and passed on, the timestamp in the file must be reset.
+        /// Note: Zulu time.
         /// </summary>
         private void SetTimeStampWhenVideoCheckSuccessful()
         {
-            this.lastCheckSuccessful = DateTime.UtcNow;
-            File.WriteAllText(this.dateTimeFile, JsonSerializer.Serialize(this.lastCheckSuccessful));
-            this.logger.LogInfo($"Created new youtubeStartup.json at {this.lastCheckSuccessful}");
+            this.lastCheckSuccessfulZulu = DateTime.UtcNow;
+            File.WriteAllText(this.dateTimeFile, JsonSerializer.Serialize(this.lastCheckSuccessfulZulu));
+            this.logger.LogInfo($"Created new youtubeStartup.json at {this.lastCheckSuccessfulZulu}");
         }
     }
 }

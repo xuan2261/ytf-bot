@@ -14,7 +14,7 @@ namespace FacebookAutomation
     /// </summary>
     public class FacebookAutomation : IDisposable
     {
-        private readonly Logger logger = new("FacebookAutomation");
+        private readonly Logger logger;
 
         // css selector to find the cookie accept button
         private static readonly By CssSelectorCookieAccept =
@@ -32,7 +32,7 @@ namespace FacebookAutomation
         private static readonly By XPathSelectorPostInGroup =
             By.XPath("//div[@aria-label='Posten'][@role='button']");
 
-        // xpath selector for youtube preview
+        // xpath selector for youtube preview box in that dialog for publishing contents in a group
         private static readonly By XPathSelectorYoutubePreviewBox =
             By.XPath("//a[@role='link'][contains(.,'youtube')]");
 
@@ -53,10 +53,7 @@ namespace FacebookAutomation
         /// </summary>
         public FacebookAutomation(Logger theLogger = null)
         {
-            if (theLogger != null)
-            {
-                this.logger = theLogger;
-            }
+            this.logger = theLogger ?? new Logger("FacebookAutomation.log");
 
             try
             {
@@ -153,7 +150,7 @@ namespace FacebookAutomation
                 if (elements.Count == 0)
                 {
                     throw new NoSuchElementException(
-                        "No elements " + elementLocator + " ClickElementAndWaitForExcludingFromDOM");
+                        "No elements " + elementLocator + " ClickElementAndWaitForExcludingFromDom");
                 }
 
                 var element = elements.First(e => e.Displayed);
@@ -207,7 +204,7 @@ namespace FacebookAutomation
                 if (elements.Count == 0)
                 {
                     throw new NoSuchElementException(
-                        "No elements " + elementLocator + " ClickElementAndWaitForExcludingFromDOM");
+                        "No elements " + elementLocator + " ClickAndWaitForClickableElement");
                 }
 
                 var element = elements.First(e => e.Displayed);
