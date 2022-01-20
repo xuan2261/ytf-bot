@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace YoutubeApi
 {
-    public class DetectedVideos
+    public class VideoMetaDataSmall
     {
         [JsonPropertyName("title")]
         public string Title { get; set; }
@@ -14,7 +14,7 @@ namespace YoutubeApi
         [JsonPropertyName("detectedAt")]
         public DateTime DetectedAt { get; set; }
 
-        public DetectedVideos()
+        public VideoMetaDataSmall()
         {
             Title = string.Empty;
             Id = string.Empty;

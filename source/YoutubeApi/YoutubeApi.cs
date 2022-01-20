@@ -36,14 +36,14 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// Returns the newest and a maximum of 'maxResults' videos of the channel channelId.
+        /// 
         /// </summary>
         /// <param name="channelId">Id of channel</param>
         /// <param name="maxResults">Maximum amount of videos</param>
         /// <returns>List of videos</returns>
-        private async Task<List<Video>> GetVideosOfChannel(string channelId, int maxResults)
+        private async Task<List<VideoMetaDataFull>> GetFullVideoMetaDatasOfChannel(string channelId, int maxResults)
         {
-            var listOfChannelVideos = new List<Video>();
+            var listOfChannelVideos = new List<VideoMetaDataFull>();
             try
             {
                 var searchListRequest = this.youtubeService.Search.List("snippet");
@@ -67,7 +67,7 @@ namespace YoutubeApi
 
                         foreach (var channelVideo in result.Items)
                         {
-                            var newVideo = new Video
+                            var newVideo = new VideoMetaDataFull
                             {
                                 Title = channelVideo.Snippet.Title,
                                 Id = channelVideo.Id,
@@ -102,23 +102,17 @@ namespace YoutubeApi
         /// <param name="maximumResult"></param>
         public void CreateVideoFile(List<string> channelIds, int maximumResult)
         {
-
-            var tasks = channelIds.Select(channelId => GetVideosOfChannel(channelId, maximumResult)).ToArray();
+            var tasks = channelIds.Select(channelId => GetFullVideoMetaDatasOfChannel(channelId, maximumResult)).ToArray();
             Task.WaitAll(tasks);
 
             var listOfVideoLists = tasks.Select(task => task.Result);
-            List<Video> completeVideoList = new List<Video>(maximumResult * channelIds.Count);
+            List<VideoMetaDataFull> completeVideoList = new List<VideoMetaDataFull>(maximumResult * channelIds.Count);
             foreach (var videos in listOfVideoLists)
             {
                 completeVideoList.AddRange(videos);
             }
 
-            var myVideos = new YtVideos
-            {
-                Videos = completeVideoList
-            };
-
-            YtVideos.Serialize(myVideos);
+            VideoMetaDataFull.Serialize(completeVideoList);
         }
     }
 }

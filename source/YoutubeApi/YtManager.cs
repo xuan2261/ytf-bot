@@ -19,7 +19,7 @@ namespace YoutubeApi
         public YtManager(string apiKey, Logger? theLogger = null)
         {
             this.logger = theLogger ?? new Logger("YoutubeApi.log");
-            //GetVideos();
+            //GetFullVideoMetaData();
             try
             {
                 GetLastSuccessfulCheckFromFile();
@@ -32,14 +32,17 @@ namespace YoutubeApi
             }
         }
 
-        public void GetVideos(List<Video> listOfExcludedVideos)
+
+        public List<VideoMetaDataFull> GetFullVideoMetaData(List<string> channelIds, List<VideoMetaDataSmall> listOfExcludedVideos)
         {
+            var listOfFullVideoMetaData = new List<VideoMetaDataFull>();
+
             // nts. Diedes Liste sollte die Videos enthalten, die ausgeschlossen werden --> Filterkriterium
             // Der Zeitstempel dieser App sollte das zweite Filterkriterium sein und zwar nicht ab Start, sondern immer dann gesetzt wenn Arbeit verrichtet wurde.
-            var detectedVideos = new List<DetectedVideos>();
+            var detectedVideos = new List<VideoMetaDataSmall>();
             for (int i = 0; i < 5; i++)
             {
-                detectedVideos.Add(new DetectedVideos
+                detectedVideos.Add(new VideoMetaDataSmall
                 {
                     Id = i.ToString(),
                     DetectedAt = DateTime.UtcNow,
@@ -48,6 +51,7 @@ namespace YoutubeApi
             }
 
             File.WriteAllText("aaaa.json", JsonSerializer.Serialize(detectedVideos));
+            return listOfFullVideoMetaData;
         }
 
         /// <summary>

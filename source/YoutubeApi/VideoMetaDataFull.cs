@@ -4,34 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace YoutubeApi
 {
-    public class YtVideos
-    {
-        [JsonPropertyName("videos")]
-        public List<Video> Videos { get; set; }
-
-        public YtVideos(int capacity=10)
-        {
-            this.Videos = new List<Video>(capacity);
-        }
-
-        public static void Serialize(YtVideos videosToSerialize)
-        {
-            var json = JsonSerializer.Serialize(videosToSerialize);
-            File.WriteAllText(@"youtubeVideos.json", json);
-        }
-
-        public static YtVideos? Deserialize(string pathToJsonFile)
-        {
-            return JsonSerializer.Deserialize<YtVideos>(File.ReadAllText(pathToJsonFile));
-        }
-    }
-
-    public class Video
+    public class VideoMetaDataFull
     {
         private string description;
         private string title;
 
-        public Video()
+        public VideoMetaDataFull()
         {
             this.title = string.Empty;
             Id = string.Empty;
@@ -77,6 +55,17 @@ namespace YoutubeApi
         {
             var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
             return Encoding.UTF8.GetString(base64EncodedBytes);
+        }
+
+        public static void Serialize(List<VideoMetaDataFull> videosToSerialize)
+        {
+            var json = JsonSerializer.Serialize(videosToSerialize);
+            File.WriteAllText(@"youtubeVideos.json", json);
+        }
+
+        public static List<VideoMetaDataFull>? Deserialize(string pathToJsonFile)
+        {
+            return JsonSerializer.Deserialize<List<VideoMetaDataFull>>(File.ReadAllText(pathToJsonFile));
         }
     }
 }
