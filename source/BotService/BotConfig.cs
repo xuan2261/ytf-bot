@@ -60,6 +60,9 @@ namespace BotService
 
         [JsonPropertyName("channelId")]
         public string ChannelId { get; set; }
+
+        [JsonPropertyName("lastSuccessfulFindZulu")]
+        public DateTime? LastSuccessfulFindZulu { get; set; }
     }
 
     public class Youtube
