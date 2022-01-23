@@ -9,9 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FacebookAutomation", "Faceb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleLogger", "..\cs-simple-logger\Source\SimpleLogger.csproj", "{E98F506A-1778-4742-AD71-62AE4A7EA8B8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelegramApi", "TelegramApi\TelegramApi.csproj", "{9CF3AFA1-AF51-4086-97F2-7B1EC55F0BA7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelegramApi", "TelegramApi\TelegramApi.csproj", "{9CF3AFA1-AF51-4086-97F2-7B1EC55F0BA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YoutubeApi", "YoutubeApi\YoutubeApi.csproj", "{12B75535-2EF1-49E1-8693-A1C7448AFB55}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YoutubeApi", "YoutubeApi\YoutubeApi.csproj", "{12B75535-2EF1-49E1-8693-A1C7448AFB55}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{B5EC17A1-E486-4EFD-B0F4-49AA042D6993}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{12B75535-2EF1-49E1-8693-A1C7448AFB55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12B75535-2EF1-49E1-8693-A1C7448AFB55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12B75535-2EF1-49E1-8693-A1C7448AFB55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5EC17A1-E486-4EFD-B0F4-49AA042D6993}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5EC17A1-E486-4EFD-B0F4-49AA042D6993}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5EC17A1-E486-4EFD-B0F4-49AA042D6993}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5EC17A1-E486-4EFD-B0F4-49AA042D6993}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

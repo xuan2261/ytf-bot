@@ -16,15 +16,14 @@ var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
 
 //telegramApi.SendToChat(botConfig.Telegram.Chats[0].ChatId, "My ass hello", 5);
 
-var youtubeManager = new YtManager(botConfig.Youtube.ApiKey, myLogger);
+var youtubeManager = new YtManager(botConfig.YoutubeConfig.ApiKey, myLogger);
 
-var channelIds = botConfig.Youtube.Channels.Select(channel => channel.ChannelId).ToList();
+var channelIds = botConfig.YoutubeConfig.Channels.Select(channel => channel.ChannelId).ToList();
 
-var temp = new List<string>();
-temp.Add(channelIds[0]);
+var temp = new List<Channel> { botConfig.YoutubeConfig.Channels[0] };
 youtubeManager.StartFullVideoMetaDataWorker(temp);
 
-//youtubeApi.CreateVideoFile(channelIds, 5);
+//youtubeApi.CreateVideoFileAsync(channelIds, 5);
 
 Console.WriteLine("Async weiter oder ed?");
 

@@ -2,6 +2,7 @@
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using SimpleLogger;
+using YoutubeApi;
 
 namespace BotService
 {
@@ -53,26 +54,6 @@ namespace BotService
         public List<Chat> Chats { get; set; }
     }
 
-    public class Channel
-    {
-        [JsonPropertyName("channelName")]
-        public string ChannelName { get; set; }
-
-        [JsonPropertyName("channelId")]
-        public string ChannelId { get; set; }
-
-        [JsonPropertyName("lastSuccessfulFindZulu")]
-        public DateTime? LastSuccessfulFindZulu { get; set; }
-    }
-
-    public class Youtube
-    {
-        [JsonPropertyName("apiKey")]
-        public string ApiKey { get; set; }
-
-        [JsonPropertyName("channels")]
-        public List<Channel> Channels { get; set; }
-    }
 
     public class BotConfig
     {
@@ -82,8 +63,8 @@ namespace BotService
         [JsonPropertyName("telegram")]
         public Telegram Telegram { get; set; }
 
-        [JsonPropertyName("youtube")]
-        public Youtube Youtube { get; set; }
+        [JsonPropertyName("youtubeConfig")]
+        public YoutubeConfig YoutubeConfig { get; set; }
 
         /// <summary>
         /// Read the application config from json file.

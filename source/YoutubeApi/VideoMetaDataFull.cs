@@ -57,13 +57,22 @@ namespace YoutubeApi
             return Encoding.UTF8.GetString(base64EncodedBytes);
         }
 
-        public static void Serialize(List<VideoMetaDataFull> videosToSerialize)
+        /// <summary>
+        /// Serialize 'videosToSerialize into file 'youtubeVideos.json'.
+        /// </summary>
+        /// <param name="videosToSerialize">List of videos to serialize.</param>
+        public static void SerializeIntoFile(List<VideoMetaDataFull> videosToSerialize)
         {
             var json = JsonSerializer.Serialize(videosToSerialize);
             File.WriteAllText(@"youtubeVideos.json", json);
         }
 
-        public static List<VideoMetaDataFull>? Deserialize(string pathToJsonFile)
+        /// <summary>
+        /// Deserialize the list of videos inside the json file 'pathToJsonFile' into an object returned.
+        /// </summary>
+        /// <param name="pathToJsonFile">Self-explanatory</param>
+        /// <returns>The list of deserialized videos.</returns>
+        public static List<VideoMetaDataFull>? DeserializeFromFile(string pathToJsonFile)
         {
             return JsonSerializer.Deserialize<List<VideoMetaDataFull>>(File.ReadAllText(pathToJsonFile));
         }

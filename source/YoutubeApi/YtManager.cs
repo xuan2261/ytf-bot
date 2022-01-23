@@ -35,14 +35,14 @@ namespace YoutubeApi
         /// This method returns a list within all metadata of videos that were published in the channels in 'channelIds'.
         /// In addition, the result is written to a Json file.
         /// </summary>
-        /// <param name="channelIds">Channels that are searched</param>
+        /// <param name="channels">Channels that are searched</param>
         /// <param name="listOfExcludedVideos">Filter criterion. The videos in this list should not be included in the result.</param>
         /// <returns>The compiled list of videos is returned and written to a file.</returns>
-        public void StartFullVideoMetaDataWorker(List<string> channelIds, List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+        public void StartFullVideoMetaDataWorker(List<Channel> channels, List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             var listOfFullVideoMetaData = new List<VideoMetaDataFull>();
 
-           this.youtubeApi.CreateVideoFile(channelIds, this.lastCheckSuccessfulZulu, 10);
+            this.youtubeApi.CreateVideoFileAsync(channels, this.lastCheckSuccessfulZulu, 10).Wait();
            
 
             File.WriteAllText("aaaa.json", JsonSerializer.Serialize(listOfFullVideoMetaData));
