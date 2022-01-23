@@ -42,7 +42,7 @@ namespace YoutubeApi
         {
             var listOfFullVideoMetaData = new List<VideoMetaDataFull>();
 
-            this.youtubeApi.CreateVideoFileAsync(channels, this.lastCheckSuccessfulZulu, 10).Wait();
+           // this.youtubeApi.CreateVideoFileAsync(channels, this.lastCheckSuccessfulZulu, 10).Wait();
            
 
             File.WriteAllText("aaaa.json", JsonSerializer.Serialize(listOfFullVideoMetaData));

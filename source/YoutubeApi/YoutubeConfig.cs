@@ -10,9 +10,6 @@ public class Channel
     [JsonPropertyName("channelId")]
     public string ChannelId { get; set; }
 
-    [JsonPropertyName("lastSuccessfulFindZulu")]
-    public DateTime? LastSuccessfulFindZulu { get; set; }
-
     public Channel()
     {
         ChannelName = string.Empty;

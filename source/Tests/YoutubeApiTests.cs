@@ -21,19 +21,19 @@ namespace Tests
         public void TestIfFileExists()
         {
             var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
-
-            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey);
-
             Channel theTestChannel = new Channel
-                                     {
-                                         ChannelId = "UCOCZKlOz6cNs2qiIhls5cqQ",
-                                         ChannelName = "Njal"
-                                     };
+            {
+                ChannelId = "UCOCZKlOz6cNs2qiIhls5cqQ",
+                ChannelName = "Njal"
+            };
+            
+            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey);
+            youtubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel.ChannelId, new DateTime(2021, 1, 1));
+
             var channelList = new List<Channel> { theTestChannel };
+            var testList = youtubeApi.CreateVideoFileAsync(channelList, 10).Result;
 
-            youtubeApi.CreateVideoFileAsync(channelList, new DateTime(2021, 01, 01), 10).Wait(TimeSpan.FromSeconds(60));
-
-            Assert.IsTrue(File.Exists("youtubeVideos.json"));
+            Assert.IsTrue(testList.Count >= 6);
         }
     }
 }

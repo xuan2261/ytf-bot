@@ -1,6 +1,7 @@
 ﻿using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
+using System.Text.Json;
 using SimpleLogger;
 
 namespace YoutubeApi
@@ -39,15 +40,18 @@ namespace YoutubeApi
         /// <summary>
         /// </summary>
         /// <param name="channel">The Youtube channel.</param>
-        /// <param name="publishedAfter">Serialize only videos that were published after that date.</param>
         /// <param name="maximumResult">Consider only this amount of results.</param>
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result. To be implemented:-(</param>
         /// <returns></returns>
         private async Task<List<VideoMetaDataFull>> GetFullVideoMetaDataOfChannelAsync(Channel channel,
-                                                                                       DateTime publishedAfter,
                                                                                        int maximumResult,
                                                                                        List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
+            // The beginning of this perhaps time-consuming process needs to be secured so that videos that are published in
+            // the meantime are not overlooked.
+            var we_re_at_now_now = DateTime.UtcNow;
+            var lastSuccessfulProcessZulu = GetLastSuccessfulCheckFromFile(channel.ChannelId, we_re_at_now_now);
+
             // This list contains all videos of the 'channel' including the complete 'Description'.
             var resultListOfChannelVideos = new List<VideoMetaDataFull>(maximumResult);
             try
@@ -57,7 +61,7 @@ namespace YoutubeApi
                 searchListRequest.Type = "video";
                 searchListRequest.Order = SearchResource.ListRequest.OrderEnum.Date;
                 searchListRequest.MaxResults = maximumResult;
-                searchListRequest.PublishedAfter = publishedAfter.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                searchListRequest.PublishedAfter = lastSuccessfulProcessZulu.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 //searchListRequest.PublishedAfter = "2022-01-20T14:00:13Z";
 
                 // The result of this call contains all the desired videos with all the information.
@@ -81,6 +85,7 @@ namespace YoutubeApi
                 throw;
             }
 
+            SetTimeStampWhenVideoCheckSuccessful(channel.ChannelId, we_re_at_now_now);
             return resultListOfChannelVideos;
         }
 
@@ -104,10 +109,11 @@ namespace YoutubeApi
                 var newVideo = new VideoMetaDataFull
                                {
                                    Title = video.Snippet.Title,
+                                   TitleBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Title),
                                    Id = video.Id,
                                    ChannelId = video.Snippet.ChannelId,
                                    ChannelTitle = video.Snippet.ChannelTitle,
-                                   Description = video.Snippet.Description
+                                   DescriptionBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Description)
                                };
                 if (video.Snippet.PublishedAt != null)
                 {
@@ -124,32 +130,51 @@ namespace YoutubeApi
         /// Async Method to create a json file 'youtubeVideos.json' from a list of YouTube channels that meet the specified conditions.
         /// </summary>
         /// <param name="channelIds">List of Youtube channels.</param>
-        /// <param name="publishedAfter">Serialize only videos that were published after that date.</param>
         /// <param name="maximumResult">Consider only this amount of results.</param>
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result.</param>
-        public async Task CreateVideoFileAsync(List<Channel> channelIds,
-                                               DateTime publishedAfter,
-                                               int maximumResult,
-                                               List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+        public async Task<List<VideoMetaDataFull>> CreateVideoFileAsync(List<Channel> channelIds,
+                                                                            int maximumResult,
+                                                                            List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
+            List<VideoMetaDataFull> completeVideoList = new(maximumResult * channelIds.Count);
             await Task.Run(() =>
                            {
                                var tasks = channelIds
                                            .Select(channelId => GetFullVideoMetaDataOfChannelAsync(
                                                        channelId,
-                                                       publishedAfter,
                                                        maximumResult,
                                                        listOfExcludedVideos)).ToArray();
                                Task.WaitAll(tasks);
                                var listOfVideoLists = tasks.Select(task => task.Result);
-                               List<VideoMetaDataFull> completeVideoList = new(maximumResult * channelIds.Count);
+                               
                                foreach (var videos in listOfVideoLists)
                                {
                                    completeVideoList.AddRange(videos);
                                }
-
-                               VideoMetaDataFull.SerializeIntoFile(completeVideoList);
                            });
+
+            return completeVideoList;
+        }
+
+        /// <summary>
+        /// To create the list of published videos, we only look at the videos that have been published since the last successful check.
+        /// This method reads the datetime of the lasst successful check for new videos from a file and returns it.
+        /// If file does not exist, we're at now now!
+        /// Note: Zulu time.
+        /// </summary>
+        public DateTime GetLastSuccessfulCheckFromFile(string channelId, DateTime nownow)
+        {
+           return File.Exists($"{channelId}.json") ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText($"{channelId}.json")) : nownow;
+        }
+
+        /// <summary>
+        /// Each time the list of new videos is successfully read and passed on, the timestamp in the file must be reset.
+        /// Note: Zulu time.
+        /// </summary>
+        public void SetTimeStampWhenVideoCheckSuccessful(string channelId, DateTime nownow)
+        {
+            File.WriteAllText($"{channelId}.json", JsonSerializer.Serialize(nownow));
+            this.logger.LogInfo($"Created new youtubeStartup.json at {nownow}");
         }
     }
 }

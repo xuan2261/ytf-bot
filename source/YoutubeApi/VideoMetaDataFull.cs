@@ -20,11 +20,10 @@ namespace YoutubeApi
         }
 
         [JsonPropertyName("title")]
-        public string Title
-        {
-            get => Base64Decode(this.title);
-            set => this.title = Base64Encode(value);
-        }
+        public string Title { get; set; }
+
+        [JsonPropertyName("titleBase64")]
+        public string TitleBase64 { get; set; }
 
         [JsonPropertyName("id")]
         public string Id { get; set; }
@@ -38,20 +37,16 @@ namespace YoutubeApi
         [JsonPropertyName("channelTitle")]
         public string ChannelTitle { get; set; }
 
-        [JsonPropertyName("description")]
-        public string Description
-        {
-            get => Base64Decode(this.description);
-            set => this.description = Base64Encode(value);
-        }
+        [JsonPropertyName("descriptionBase64")]
+        public string DescriptionBase64 { get; set; }
 
-        private static string Base64Encode(string plainText)
+        public static string Base64Encode(string plainText)
         {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
             return Convert.ToBase64String(plainTextBytes);
         }
 
-        private static string Base64Decode(string base64EncodedData)
+        public static string Base64Decode(string base64EncodedData)
         {
             var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
             return Encoding.UTF8.GetString(base64EncodedBytes);
