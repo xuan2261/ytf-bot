@@ -1,7 +1,6 @@
-﻿using Google.Apis.Services;
+﻿using System.Text.Json;
+using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
-using Google.Apis.YouTube.v3.Data;
-using System.Text.Json;
 using SimpleLogger;
 
 namespace YoutubeApi
@@ -25,10 +24,10 @@ namespace YoutubeApi
             try
             {
                 this.youtubeService = new YouTubeService(new BaseClientService.Initializer()
-                {
-                    ApiKey = apiKey,
-                    ApplicationName = applicationName
-                });
+                                                         {
+                                                             ApiKey = apiKey,
+                                                             ApplicationName = applicationName
+                                                         });
             }
             catch (Exception e)
             {
@@ -38,12 +37,15 @@ namespace YoutubeApi
         }
 
         /// <summary>
+        /// This method returns a list within all meta data to videos found in the passed channel 'channel'.
+        /// By means of the file "channelName.json", a time stamp is read out with the help of which it is determined whether there are new
+        /// videos in the channel since the last read-out. After a successful procedure, the current timestamp is written to the file.
         /// </summary>
         /// <param name="channel">The Youtube channel.</param>
         /// <param name="maximumResult">Consider only this amount of results.</param>
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result. To be implemented:-(</param>
-        /// <returns></returns>
-        private async Task<List<VideoMetaDataFull>> GetFullVideoMetaDataOfChannelAsync(Channel channel,
+        /// <returns>The list of full meta data videos found in the channel.</returns>
+        public async Task<List<VideoMetaDataFull>> GetFullVideoMetaDataOfChannelAsync(Channel channel,
                                                                                        int maximumResult,
                                                                                        List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
@@ -62,6 +64,7 @@ namespace YoutubeApi
                 searchListRequest.Order = SearchResource.ListRequest.OrderEnum.Date;
                 searchListRequest.MaxResults = maximumResult;
                 searchListRequest.PublishedAfter = lastSuccessfulProcessZulu.ToString("yyyy-MM-ddTHH:mm:ssZ");
+
                 //searchListRequest.PublishedAfter = "2022-01-20T14:00:13Z";
 
                 // The result of this call contains all the desired videos with all the information.
@@ -70,7 +73,7 @@ namespace YoutubeApi
 
                 // For each searchListResponse, perform another videoRequest. This means that for each video found, another request is made to obtain
                 // the complete "Description".
-                var tasks = searchListResponse.Items.Select(searchResults => GetVideoMetaData(searchResults.Id.VideoId)).ToArray();                  
+                var tasks = searchListResponse.Items.Select(searchResults => GetVideoMetaData(searchResults.Id.VideoId)).ToArray();
                 Task.WaitAll(tasks);
                 var listOfVideoLists = tasks.Select(task => task.Result);
 
@@ -91,11 +94,11 @@ namespace YoutubeApi
 
         /// <summary>
         /// This method performs a VideoRequest for a single video to get the full description of the video.
-        /// The confusing thing about this construct is that the result of this call is in a list.This is due to the YoutubeApi. 
+        /// The confusing thing about this construct is that the result of this call is in a list.This is due to the YoutubeApi.
         /// </summary>
         /// <param name="videoId">The video to which the information is fetched.</param>
         /// <returns>This list contains exactly one video. At the moment I'm not sure how awesome it is:-(</returns>
-        private async Task<List<VideoMetaDataFull>> GetVideoMetaData(string videoId)
+        public async Task<List<VideoMetaDataFull>> GetVideoMetaData(string videoId)
         {
             var listOfChannelVideos = new List<VideoMetaDataFull>();
             var videoRequest = this.youtubeService.Videos.List("snippet");
@@ -122,19 +125,20 @@ namespace YoutubeApi
 
                 listOfChannelVideos.Add(newVideo);
             }
+
             return listOfChannelVideos;
         }
 
 
         /// <summary>
-        /// Async Method to create a json file 'youtubeVideos.json' from a list of YouTube channels that meet the specified conditions.
+        /// Async Method to create a list with all the metadata of the videos contained in the channels passed.
         /// </summary>
         /// <param name="channelIds">List of Youtube channels.</param>
         /// <param name="maximumResult">Consider only this amount of results.</param>
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result.</param>
         public async Task<List<VideoMetaDataFull>> CreateVideoFileAsync(List<Channel> channelIds,
-                                                                            int maximumResult,
-                                                                            List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+                                                                        int maximumResult,
+                                                                        List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             List<VideoMetaDataFull> completeVideoList = new(maximumResult * channelIds.Count);
             await Task.Run(() =>
@@ -146,7 +150,7 @@ namespace YoutubeApi
                                                        listOfExcludedVideos)).ToArray();
                                Task.WaitAll(tasks);
                                var listOfVideoLists = tasks.Select(task => task.Result);
-                               
+
                                foreach (var videos in listOfVideoLists)
                                {
                                    completeVideoList.AddRange(videos);
@@ -157,24 +161,24 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// To create the list of published videos, we only look at the videos that have been published since the last successful check.
+        /// To create the list of published videos, we only look at the videos that have been published since the last successful
+        /// check.
         /// This method reads the datetime of the lasst successful check for new videos from a file and returns it.
         /// If file does not exist, we're at now now!
         /// Note: Zulu time.
         /// </summary>
-        public DateTime GetLastSuccessfulCheckFromFile(string channelId, DateTime nownow)
+        public static DateTime GetLastSuccessfulCheckFromFile(string channelId, DateTime nownow)
         {
-           return File.Exists($"{channelId}.json") ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText($"{channelId}.json")) : nownow;
+            return File.Exists($"{channelId}.json") ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText($"{channelId}.json")) : nownow;
         }
 
         /// <summary>
         /// Each time the list of new videos is successfully read and passed on, the timestamp in the file must be reset.
         /// Note: Zulu time.
         /// </summary>
-        public void SetTimeStampWhenVideoCheckSuccessful(string channelId, DateTime nownow)
+        public static void SetTimeStampWhenVideoCheckSuccessful(string channelId, DateTime nownow)
         {
             File.WriteAllText($"{channelId}.json", JsonSerializer.Serialize(nownow));
-            this.logger.LogInfo($"Created new youtubeStartup.json at {nownow}");
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Tests
         /// Yes, this no UnitTests and it sucks. I had not the time to
         /// </summary>
         [TestMethod]
-        public void TestIfFileExists()
+        public void TestIfListWasReturned()
         {
             var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
             Channel theTestChannel = new Channel
@@ -26,14 +26,30 @@ namespace Tests
                 ChannelId = "UCOCZKlOz6cNs2qiIhls5cqQ",
                 ChannelName = "Njal"
             };
-            
+            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel.ChannelId, new DateTime(2021, 1, 1));
+
             var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey);
-            youtubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel.ChannelId, new DateTime(2021, 1, 1));
 
             var channelList = new List<Channel> { theTestChannel };
             var testList = youtubeApi.CreateVideoFileAsync(channelList, 10).Result;
 
             Assert.IsTrue(testList.Count >= 6);
+        }
+
+        [TestMethod]
+        public void StartYoutubeWorkerTest()
+        {
+            var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
+            Channel theTestChannel = new Channel
+                                     {
+                                         ChannelId = "UCOCZKlOz6cNs2qiIhls5cqQ",
+                                         ChannelName = "Njal"
+                                     };
+            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel.ChannelId, new DateTime(2021, 1, 1));
+
+            var ytManager = new YtManager(botConfig.YoutubeConfig.ApiKey);
+            var channelList = new List<Channel> { theTestChannel };
+            ytManager.StartYoutubeWorkerWorker(channelList);
         }
     }
 }

@@ -21,7 +21,7 @@ var youtubeManager = new YtManager(botConfig.YoutubeConfig.ApiKey, myLogger);
 var channelIds = botConfig.YoutubeConfig.Channels.Select(channel => channel.ChannelId).ToList();
 
 var temp = new List<Channel> { botConfig.YoutubeConfig.Channels[0] };
-youtubeManager.StartFullVideoMetaDataWorker(temp);
+//youtubeManager.StartFullVideoMetaDataWorker(temp);
 
 //youtubeApi.CreateVideoFileAsync(channelIds, 5);
 

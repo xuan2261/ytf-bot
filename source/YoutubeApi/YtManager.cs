@@ -8,8 +8,6 @@ namespace YoutubeApi
     {
         private readonly YoutubeApi youtubeApi;
         private readonly Logger logger;
-        private readonly string dateTimeFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "youtubeStartUp.json");
-        private DateTime lastCheckSuccessfulZulu;
 
 
         /// <remarks>
@@ -21,7 +19,6 @@ namespace YoutubeApi
             this.logger = theLogger ?? new Logger("YoutubeApi.log");
             try
             {
-                GetLastSuccessfulCheckFromFile();
                 this.youtubeApi = new YoutubeApi("YoutubeApi", apiKey, this.logger);
             }
             catch (Exception e)
@@ -38,35 +35,23 @@ namespace YoutubeApi
         /// <param name="channels">Channels that are searched</param>
         /// <param name="listOfExcludedVideos">Filter criterion. The videos in this list should not be included in the result.</param>
         /// <returns>The compiled list of videos is returned and written to a file.</returns>
-        public void StartFullVideoMetaDataWorker(List<Channel> channels, List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+        public void StartYoutubeWorkerWorker(List<Channel> channels, List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             var listOfFullVideoMetaData = new List<VideoMetaDataFull>();
 
-           // this.youtubeApi.CreateVideoFileAsync(channels, this.lastCheckSuccessfulZulu, 10).Wait();
+            var task = this.youtubeApi.CreateVideoFileAsync(channels, 10);
+            if (!task.Wait(TimeSpan.FromSeconds(10)))
+            {
+                this.logger.LogError($"Timeout, cause of something. Do something.");
+            }
+            else
+            {
+                var list = task.Result;
+            }
            
 
             File.WriteAllText("aaaa.json", JsonSerializer.Serialize(listOfFullVideoMetaData));
         }
 
-        /// <summary>
-        /// To create the list of published videos, we only look at the videos that have been published since the last successful check.
-        /// This method reads the datetime of the lasst successful check for new videos from a file and stores it into 'this.lastCheckSuccessfulZulu'.
-        /// Note: Zulu time.
-        /// </summary>
-        private void GetLastSuccessfulCheckFromFile()
-        {
-            this.lastCheckSuccessfulZulu = File.Exists(this.dateTimeFile) ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText(this.dateTimeFile)) : DateTime.UtcNow;
-        }
-
-        /// <summary>
-        /// Each time the list of new videos is successfully read and passed on, the timestamp in the file must be reset.
-        /// Note: Zulu time.
-        /// </summary>
-        private void SetTimeStampWhenVideoCheckSuccessful()
-        {
-            this.lastCheckSuccessfulZulu = DateTime.UtcNow;
-            File.WriteAllText(this.dateTimeFile, JsonSerializer.Serialize(this.lastCheckSuccessfulZulu));
-            this.logger.LogInfo($"Created new youtubeStartup.json at {this.lastCheckSuccessfulZulu}");
-        }
     }
 }
