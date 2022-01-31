@@ -12,20 +12,12 @@ namespace YoutubeApi
 
         /// <remarks>
         /// My ass</remarks>
-        /// <param name="apiKey">Secret api key to access youtube api.</param>
+        /// <param name="youtubeApi">YoutubeApi</param>
         /// <param name="theLogger">The logger if exists</param>
-        public YtManager(string apiKey, Logger? theLogger = null)
+        public YtManager(YoutubeApi youtubeApi)
         {
-            this.logger = theLogger ?? new Logger("YoutubeApi.log");
-            try
-            {
-                this.youtubeApi = new YoutubeApi("YoutubeApi", apiKey, this.logger);
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError(e.Message);
-                throw;
-            }
+            this.logger = youtubeApi.Logger;
+            this.youtubeApi = youtubeApi;
         }
 
         /// <summary>
@@ -39,7 +31,7 @@ namespace YoutubeApi
         {
             var listOfFullVideoMetaData = new List<VideoMetaDataFull>();
 
-            var task = this.youtubeApi.CreateVideoFileAsync(channels, 10);
+            var task = this.youtubeApi.CreateListWithFullVideoMetaDataAsync(channels, 10);
             if (!task.Wait(TimeSpan.FromSeconds(10)))
             {
                 this.logger.LogError($"Timeout, cause of something. Do something.");
@@ -48,7 +40,7 @@ namespace YoutubeApi
             {
                 var list = task.Result;
             }
-           
+
 
             File.WriteAllText("aaaa.json", JsonSerializer.Serialize(listOfFullVideoMetaData));
         }

@@ -10,6 +10,8 @@ namespace YoutubeApi
         private readonly YouTubeService youtubeService;
         private readonly Logger logger;
 
+        public Logger Logger => this.logger;
+
         /// <summary>
         /// Ctor.
         /// Initiates the YoutubeService.
@@ -52,7 +54,7 @@ namespace YoutubeApi
             // The beginning of this perhaps time-consuming process needs to be secured so that videos that are published in
             // the meantime are not overlooked.
             var we_re_at_now_now = DateTime.UtcNow;
-            var lastSuccessfulProcessZulu = GetLastSuccessfulCheckFromFile(channel.ChannelId, we_re_at_now_now);
+            var lastSuccessfulProcessZulu = GetLastSuccessfulCheckFromFile(channel, we_re_at_now_now);
 
             // This list contains all videos of the 'channel' including the complete 'Description'.
             var resultListOfChannelVideos = new List<VideoMetaDataFull>(maximumResult);
@@ -88,7 +90,7 @@ namespace YoutubeApi
                 throw;
             }
 
-            SetTimeStampWhenVideoCheckSuccessful(channel.ChannelId, we_re_at_now_now);
+            SetTimeStampWhenVideoCheckSuccessful(channel, we_re_at_now_now);
             return resultListOfChannelVideos;
         }
 
@@ -131,12 +133,17 @@ namespace YoutubeApi
 
 
         /// <summary>
-        /// Async Method to create a list with all the metadata of the videos contained in the channels passed.
+        /// Async Method to create a list with all the metadata of the videos contained in the channels in channelIds.
         /// </summary>
+        /// <remarks>
+        /// Note! To create the list of published videos, we only look at the videos that have been published since the last successful
+        /// check. So this method reads the datetime of the lasst successful check for new videos from a file and returns it.
+        /// If file does not exist, we're at now now! This means that you will most likely not get any results.
+        /// </remarks>
         /// <param name="channelIds">List of Youtube channels.</param>
         /// <param name="maximumResult">Consider only this amount of results.</param>
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result.</param>
-        public async Task<List<VideoMetaDataFull>> CreateVideoFileAsync(List<Channel> channelIds,
+        public async Task<List<VideoMetaDataFull>> CreateListWithFullVideoMetaDataAsync(List<Channel> channelIds,
                                                                         int maximumResult,
                                                                         List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
@@ -162,23 +169,34 @@ namespace YoutubeApi
 
         /// <summary>
         /// To create the list of published videos, we only look at the videos that have been published since the last successful
-        /// check.
-        /// This method reads the datetime of the lasst successful check for new videos from a file and returns it.
-        /// If file does not exist, we're at now now!
+        /// check. So this method reads the datetime of the lasst successful check for new videos from a file and returns it.
+        /// If file does not exist, we're at now now! This means that you will most likely not get any results.
         /// Note: Zulu time.
         /// </summary>
-        public static DateTime GetLastSuccessfulCheckFromFile(string channelId, DateTime nownow)
+        public DateTime GetLastSuccessfulCheckFromFile(Channel channel, DateTime nownow)
         {
-            return File.Exists($"{channelId}.json") ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText($"{channelId}.json")) : nownow;
+            var fileName = MakeChannelTimeStamp(channel.ChannelId);
+            return File.Exists(fileName) ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText(fileName)) : nownow;
         }
 
         /// <summary>
         /// Each time the list of new videos is successfully read and passed on, the timestamp in the file must be reset.
         /// Note: Zulu time.
         /// </summary>
-        public static void SetTimeStampWhenVideoCheckSuccessful(string channelId, DateTime nownow)
+        public void SetTimeStampWhenVideoCheckSuccessful(Channel channel, DateTime nownow)
         {
-            File.WriteAllText($"{channelId}.json", JsonSerializer.Serialize(nownow));
+            File.WriteAllText(MakeChannelTimeStamp(channel.ChannelId), JsonSerializer.Serialize(nownow));
+            this.logger.LogDebug($"Set time stamp in channel time stamp file of channel {channel.ChannelName} with id {channel.ChannelId}");
+        }
+
+        /// <summary>
+        /// Creates the filename of the channel time stamp file.
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        public static string MakeChannelTimeStamp(string channelId)
+        {
+            return $"{channelId}.json";
         }
     }
 }
