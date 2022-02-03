@@ -6,17 +6,15 @@ namespace YoutubeApi
 {
     public class VideoMetaDataFull
     {
-        private string description;
-        private string title;
-
         public VideoMetaDataFull()
         {
-            this.title = string.Empty;
+            Title = string.Empty;
+            TitleBase64 = string.Empty;
+            DescriptionBase64 = string.Empty;
             Id = string.Empty;
             PublishedAtRaw = DateTime.MinValue;
             ChannelId = string.Empty;
             ChannelTitle = string.Empty;
-            this.description = string.Empty;
         }
 
         [JsonPropertyName("title")]
@@ -39,6 +37,7 @@ namespace YoutubeApi
 
         [JsonPropertyName("descriptionBase64")]
         public string DescriptionBase64 { get; set; }
+
 
         public static string Base64Encode(string plainText)
         {

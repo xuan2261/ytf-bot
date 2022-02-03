@@ -223,7 +223,7 @@ namespace FacebookAutomation
         }
 
         /// <summary>
-        /// Make sure this method to be called, use the ctor of this class in s "using block".
+        /// Make sure this method to be called, use the ctor of this class in a "using block".
         /// </summary>
         public void Dispose()
         {

@@ -8,9 +8,8 @@ namespace YoutubeApi
     public class YoutubeApi
     {
         private readonly YouTubeService youtubeService;
-        private readonly Logger logger;
 
-        public Logger Logger => this.logger;
+        public Logger Logger { get; }
 
         /// <summary>
         /// Ctor.
@@ -21,8 +20,7 @@ namespace YoutubeApi
         /// <param name="theLogger">Logger if available</param>
         public YoutubeApi(string applicationName, string apiKey, Logger? theLogger = null)
         {
-            this.logger = theLogger ?? new Logger("YoutubeApi.log");
-
+            this.Logger = theLogger ?? new Logger("YoutubeApi.log");
             try
             {
                 this.youtubeService = new YouTubeService(new BaseClientService.Initializer()
@@ -33,28 +31,30 @@ namespace YoutubeApi
             }
             catch (Exception e)
             {
-                this.logger.LogError(e.Message);
+                this.Logger.LogError(e.Message);
                 throw;
             }
         }
 
         /// <summary>
         /// This method returns a list within all meta data to videos found in the passed channel 'channel'.
-        /// By means of the file "channelName.json", a time stamp is read out with the help of which it is determined whether there are new
-        /// videos in the channel since the last read-out. After a successful procedure, the current timestamp is written to the file.
+        /// By means of the file "channelName.json", a time stamp is read out with the help of which it is determined whether there
+        /// are new
+        /// videos in the channel since the last read-out. After a successful procedure, the current timestamp is written to the
+        /// file.
         /// </summary>
         /// <param name="channel">The Youtube channel.</param>
         /// <param name="maximumResult">Consider only this amount of results.</param>
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result. To be implemented:-(</param>
         /// <returns>The list of full meta data videos found in the channel.</returns>
         public async Task<List<VideoMetaDataFull>> GetFullVideoMetaDataOfChannelAsync(Channel channel,
-                                                                                       int maximumResult,
-                                                                                       List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+                                                                                      int maximumResult,
+                                                                                      List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             // The beginning of this perhaps time-consuming process needs to be secured so that videos that are published in
             // the meantime are not overlooked.
-            var we_re_at_now_now = DateTime.UtcNow;
-            var lastSuccessfulProcessZulu = GetLastSuccessfulCheckFromFile(channel, we_re_at_now_now);
+            var weAreAtNowNow = DateTime.UtcNow;
+            var lastSuccessfulProcessZulu = GetLastSuccessfulCheckFromFile(channel, weAreAtNowNow);
 
             // This list contains all videos of the 'channel' including the complete 'Description'.
             var resultListOfChannelVideos = new List<VideoMetaDataFull>(maximumResult);
@@ -66,8 +66,6 @@ namespace YoutubeApi
                 searchListRequest.Order = SearchResource.ListRequest.OrderEnum.Date;
                 searchListRequest.MaxResults = maximumResult;
                 searchListRequest.PublishedAfter = lastSuccessfulProcessZulu.ToString("yyyy-MM-ddTHH:mm:ssZ");
-
-                //searchListRequest.PublishedAfter = "2022-01-20T14:00:13Z";
 
                 // The result of this call contains all the desired videos with all the information.
                 // Unfortunately, only with an incomplete "Description". 
@@ -86,11 +84,12 @@ namespace YoutubeApi
             }
             catch (Exception e)
             {
-                this.logger.LogError(e.Message);
+                this.Logger.LogError(e.Message);
                 throw;
             }
 
-            SetTimeStampWhenVideoCheckSuccessful(channel, we_re_at_now_now);
+            SetTimeStampWhenVideoCheckSuccessful(channel, weAreAtNowNow);
+            this.Logger.LogDebug($"Set time stamp in channel time stamp file of channel {channel.ChannelName} with id {channel.ChannelId}");
             return resultListOfChannelVideos;
         }
 
@@ -136,16 +135,18 @@ namespace YoutubeApi
         /// Async Method to create a list with all the metadata of the videos contained in the channels in channelIds.
         /// </summary>
         /// <remarks>
-        /// Note! To create the list of published videos, we only look at the videos that have been published since the last successful
+        /// Note! To create the list of published videos, we only look at the videos that have been published since the last
+        /// successful
         /// check. So this method reads the datetime of the lasst successful check for new videos from a file and returns it.
         /// If file does not exist, we're at now now! This means that you will most likely not get any results.
         /// </remarks>
         /// <param name="channelIds">List of Youtube channels.</param>
         /// <param name="maximumResult">Consider only this amount of results.</param>
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result.</param>
+        /// <returns>List with videos if news available, empty list if not.</returns>
         public async Task<List<VideoMetaDataFull>> CreateListWithFullVideoMetaDataAsync(List<Channel> channelIds,
-                                                                        int maximumResult,
-                                                                        List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+                                                                                        int maximumResult,
+                                                                                        List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             List<VideoMetaDataFull> completeVideoList = new(maximumResult * channelIds.Count);
             await Task.Run(() =>
@@ -171,22 +172,21 @@ namespace YoutubeApi
         /// To create the list of published videos, we only look at the videos that have been published since the last successful
         /// check. So this method reads the datetime of the lasst successful check for new videos from a file and returns it.
         /// If file does not exist, we're at now now! This means that you will most likely not get any results.
-        /// Note: Zulu time.
+        /// Note: Zulu time, no logging no exception handling
         /// </summary>
-        public DateTime GetLastSuccessfulCheckFromFile(Channel channel, DateTime nownow)
+        public static DateTime GetLastSuccessfulCheckFromFile(Channel channel, DateTime nowNow)
         {
-            var fileName = MakeChannelTimeStamp(channel.ChannelId);
-            return File.Exists(fileName) ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText(fileName)) : nownow;
+            var fullPathFileName = MakeChannelTimeStamp(channel.ChannelId);
+            return File.Exists(fullPathFileName) ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText(fullPathFileName)) : nowNow;
         }
 
         /// <summary>
         /// Each time the list of new videos is successfully read and passed on, the timestamp in the file must be reset.
-        /// Note: Zulu time.
+        /// Note: Zulu time, no logging, no exception handling
         /// </summary>
-        public void SetTimeStampWhenVideoCheckSuccessful(Channel channel, DateTime nownow)
+        public static void SetTimeStampWhenVideoCheckSuccessful(Channel channel, DateTime nowNow)
         {
-            File.WriteAllText(MakeChannelTimeStamp(channel.ChannelId), JsonSerializer.Serialize(nownow));
-            this.logger.LogDebug($"Set time stamp in channel time stamp file of channel {channel.ChannelName} with id {channel.ChannelId}");
+            File.WriteAllText(MakeChannelTimeStamp(channel.ChannelId), JsonSerializer.Serialize(nowNow));
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace YoutubeApi
         /// <returns></returns>
         public static string MakeChannelTimeStamp(string channelId)
         {
-            return $"{channelId}.json";
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{channelId}.json");
         }
     }
 }

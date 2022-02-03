@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using BotService;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimpleLogger;
@@ -34,7 +35,7 @@ namespace Tests
                                      };
             var logger = new Logger("yt_test.log");
             youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey, logger);
-            youtubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2021, 1, 1));
+            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2021, 1, 1));
             return theTestChannel;
         }
 
@@ -61,11 +62,40 @@ namespace Tests
         [TestMethod]
         public void StartYoutubeWorkerTest()
         {
+            string thefile = string.Empty;
+
+            void MyLocalCallback(string file, string message)
+            {
+                Assert.IsFalse(file == "");
+                if (file != "End")
+                {
+                    thefile = file;
+                }
+
+                Console.WriteLine(file);
+                Console.WriteLine(message);
+            }
+
             var theTestChannel = SetUpTest(out var youtubeApi);
+            var secondChannel = new Channel
+                                {
+                                    ChannelId = "UCraxywJxOEv-zQ2Yvmp4LtA",
+                                    ChannelName = "Njals Traum - Thema"
+                                };
+            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(secondChannel, new DateTime(2021, 1, 1));
+            var channelList = new List<Channel>
+                              {
+                                  theTestChannel,
+                                  secondChannel
+                              };
+            
 
             var ytManager = new YtManager(youtubeApi);
-            var channelList = new List<Channel> { theTestChannel };
-            ytManager.StartYoutubeWorkerWorker(channelList);
+            var ddd = ytManager.StartYoutubeWorkerWorker(channelList, MyLocalCallback);
+            ddd.Wait(TimeSpan.FromMinutes(1));
+            ytManager.StopYoutubeWorker();
+            ddd.Wait(TimeSpan.FromSeconds(35));
+            Assert.IsTrue(File.Exists(thefile));
         }
     }
 }
