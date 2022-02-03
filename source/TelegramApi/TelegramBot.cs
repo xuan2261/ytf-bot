@@ -42,10 +42,10 @@ namespace TelegramApi
         /// Async method to send message to telegram chat or user.
         /// Method is fire and forget, errors are logged on console or in file.
         /// </summary>
-        /// <param name="chatId"></param>
-        /// <param name="messageToPublish"></param>
-        /// <param name="timeOut"></param>
-        public async void SendToChat(long chatId, string messageToPublish, int timeOut)
+        /// <param name="chatId">Chat to send a message in.</param>
+        /// <param name="messageToPublish">The message to publish.</param>
+        /// <param name="timeOut">After seconds an error is logged and there was no message sent.</param>
+        public async void SendToChatAsync(long chatId, string messageToPublish, int timeOut)
         {
             try
             {
@@ -69,7 +69,7 @@ namespace TelegramApi
         }
 
         /// <summary>
-        /// Internal helper to send/publish a message in a cuat/group/channel.
+        /// Internal helper to send/publish a message in a chat/group/channel.
         /// The Telegram Api documentation is unfortunately very imprecise. It is also not at all clear what is in 'message' if publishing
         /// did not work. 
         /// </summary>

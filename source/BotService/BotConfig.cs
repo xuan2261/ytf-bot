@@ -2,6 +2,7 @@
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using SimpleLogger;
+using TelegramApi;
 using YoutubeApi;
 
 namespace BotService
@@ -27,33 +28,6 @@ namespace BotService
         public List<Group> Groups { get; set; }
     }
 
-    public class Bot
-    {
-        [JsonPropertyName("botName")]
-        public string BotName { get; set; }
-
-        [JsonPropertyName("botToken")]
-        public string BotToken { get; set; }
-    }
-
-    public class Chat
-    {
-        [JsonPropertyName("chatName")]
-        public string ChatName { get; set; }
-
-        [JsonPropertyName("chatId")]
-        public long ChatId { get; set; }
-    }
-
-    public class Telegram
-    {
-        [JsonPropertyName("bots")]
-        public List<Bot> Bots { get; set; }
-
-        [JsonPropertyName("chats")]
-        public List<Chat> Chats { get; set; }
-    }
-
 
     public class BotConfig
     {
@@ -61,7 +35,7 @@ namespace BotService
         public FaceBook FaceBook { get; set; }
 
         [JsonPropertyName("telegram")]
-        public Telegram Telegram { get; set; }
+        public TelegramConfig TelegramConfig { get; set; }
 
         [JsonPropertyName("youtubeConfig")]
         public YoutubeConfig YoutubeConfig { get; set; }
