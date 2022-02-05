@@ -1,32 +1,40 @@
-﻿using SimpleLogger;
+﻿using System.Runtime.CompilerServices;
+using Common;
+using SimpleLogger;
 
 namespace TelegramApi
 {
     public class TelegramManager
     {
-        public static string TelegramListOfProcessedFiles => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TelegramProcessedFiles.list");
+        /// <summary>
+        /// Path to the file in which the names of the already processed YoutubeMeta files are located. 
+        /// </summary>
+        public static string PathToListOfProcessedFiles => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TelegramProcessedFiles.list");
 
         private readonly Logger logger;
         private bool workerShallRun;
 
-        private Bot myPlayBot, bmBot, unh317_01;
-        private Chat haufen, gBM, bM;
+        private readonly Chat haufen, gBm, bM;
+
+        // ReSharper disable once InconsistentNaming
+        private readonly TelegramBot irgendeinBot, unh317_01, blackmetaloid;
 
         public TelegramManager(TelegramConfig myConfig)
         {
-            this.logger = new Logger("TelegramManager.log");
-            LoadConfiguration(myConfig);
-        }
-
-        private void LoadConfiguration(TelegramConfig myConfig)
-        {
-            this.unh317_01 = myConfig.Bots[0];
-            this.myPlayBot = myConfig.Bots[1];
-            this.bmBot = myConfig.Bots[2];
+            var unh31701Config = myConfig.Bots[0];
+            var irgendeinBotConfig = myConfig.Bots[1];
+            var blackmetaloidConfig = myConfig.Bots[2];
 
             this.haufen = myConfig.Chats[0];
-            this.gBM = myConfig.Chats[1];
+            this.gBm = myConfig.Chats[1];
             this.bM = myConfig.Chats[2];
+
+            this.logger = new Logger("TelegramManager.log");
+
+            this.irgendeinBot = new TelegramBot(irgendeinBotConfig.BotToken, irgendeinBotConfig.BotName);
+            this.blackmetaloid = new TelegramBot(blackmetaloidConfig.BotToken, blackmetaloidConfig.BotName);
+            this.unh317_01 = new TelegramBot(unh31701Config.BotToken, unh31701Config.BotName);
+
         }
 
         /// <summary>
@@ -60,34 +68,80 @@ namespace TelegramApi
         /// Method finds the youtube meta video files that are not yet processed.
         /// Files with a freely definable content exist in the current directory. The file names of these files end with
         /// "searchPattern". It is assumed that these files are somehow processed and the already processed files are located as a
-        /// string in the text file "fileWithProcessedFiles".This method creates a list of file names that have not yet been
-        /// processed and are therefore not in the file "fileWithProcessedFiles".
+        /// string in the text file "pathToListOfProcessedFileNames".This method creates a list of file names that have not yet been
+        /// processed and are therefore not in the file "pathToListOfProcessedFileNames".
         /// </summary>
-        /// <returns>Returns a list with file names that are not processed yet.</returns>
-        public List<string> FindNotYetProcessedFiles(string fileWithProcessedFiles, string searchPattern)
+        /// <returns>Returns a list within the full path to youtube meta files that are not processed yet.</returns>
+        public static List<string> FindNotYetProcessedYoutubeMetaFiles(string pathToListOfProcessedFileNames, string searchPattern)
         {
             var availableYoutubeMetaFiles = Directory
                                             .EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
                                             .Where(file => file.EndsWith(searchPattern))
                                             .ToList();
-            var result = new List<string>();
-            if (File.Exists(TelegramListOfProcessedFiles))
+            var notYetProcessedFileNames = new List<string>();
+            if (File.Exists(pathToListOfProcessedFileNames))
             {
-                var listOfProcessedYoutubeFiles = File.ReadAllLines(fileWithProcessedFiles).ToList();
-                availableYoutubeMetaFiles.ForEach(file =>
+                var listOfProcessedYoutubeFiles = File.ReadAllLines(pathToListOfProcessedFileNames).ToList();
+                availableYoutubeMetaFiles.ForEach(fullPathToFile =>
                                                   {
-                                                      if (listOfProcessedYoutubeFiles.Contains(Path.GetFileName(file)))
+                                                      if (!listOfProcessedYoutubeFiles.Contains(Path.GetFileName(fullPathToFile)))
                                                       {
-                                                          result.Add(file);
+                                                          notYetProcessedFileNames.Add(fullPathToFile);
                                                       }
                                                   });
             }
             else
             {
+                // If there is not yet a file that logs which youtube meta files have been processed, a list of the names of all the
+                // youtube meta files that can be found is returned.
                 return availableYoutubeMetaFiles;
             }
+            return notYetProcessedFileNames;
+        }
 
-            return result;
+        /// <summary>
+        /// This method writes the list of the names of the files that have been processed to the log file pathToListOfProcessedFiles.
+        /// </summary>
+        /// <param name="pathToListOfProcessedFiles"></param>
+        /// <param name="newProcessedFiles"></param>
+        public static void WriteProcessedFileNamesIntoListOfProcessedFiles(string pathToListOfProcessedFiles, List<string> newProcessedFiles)
+        {
+            File.AppendAllLines(pathToListOfProcessedFiles, newProcessedFiles);
+        }
+
+        public async Task TaskForirgendeinBot(List<string> newProcessedFiles)
+        {
+            await SendYoutubeMetaFileInfoToTelegramChat(newProcessedFiles, this.irgendeinBot, this.haufen);
+        }
+
+        private async Task SendYoutubeMetaFileInfoToTelegramChat(List<string> newProcessedFiles, TelegramBot theBot, Chat theChat)
+        {
+            try
+            {
+                await Task.Run(() =>
+                               {
+                                   foreach (var newProcessedFile in newProcessedFiles)
+                                   {
+                                       if (File.Exists(newProcessedFile))
+                                       {
+                                           var listOfMetaVideoDate = VideoMetaDataFull.DeserializeFromFile(newProcessedFile);
+                                           foreach (var videoMetaDataFull in listOfMetaVideoDate)
+                                           {
+                                               theBot.SendToChatAsync(theChat.ChatId, videoMetaDataFull.GetReadableDescription(), 5);
+                                           }
+                                       }
+                                       else
+                                       {
+                                           this.logger.LogError($"File {newProcessedFile} not found");
+                                       }
+                                   }
+                               });
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError(e.Message);
+            }
+  
         }
     }
 }

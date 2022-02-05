@@ -17,16 +17,19 @@ namespace TelegramApi
         private readonly TelegramBotClient telegramBotClient;
         private readonly AutoResetEvent autoResetForSendMessage = new AutoResetEvent(false);
 
+        public readonly string Name;
+
         /// <summary>
         /// Ctor.
         /// Creates a bit client with your private token
         /// </summary>
         /// <param name="privateBotApiToken"></param>
+        /// <param name="name">Name of the bot</param>
         /// <param name="theLogger"></param>
-        public TelegramBot(string privateBotApiToken, Logger? theLogger = null)
+        public TelegramBot(string privateBotApiToken, string name, Logger? theLogger = null)
         {
             this.logger = theLogger ?? new Logger("TelegramBot.log");
-
+            this.Name = name;
             try
             {
                 this.telegramBotClient = new TelegramBotClient(privateBotApiToken);

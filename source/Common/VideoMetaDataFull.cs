@@ -66,9 +66,17 @@ namespace Common
         /// </summary>
         /// <param name="pathToJsonFile">Self-explanatory</param>
         /// <returns>The list of deserialized videos.</returns>
-        public static List<VideoMetaDataFull>? DeserializeFromFile(string pathToJsonFile)
+        public static List<VideoMetaDataFull> DeserializeFromFile(string pathToJsonFile)
         {
-            return JsonSerializer.Deserialize<List<VideoMetaDataFull>>(File.ReadAllText(pathToJsonFile));
+            var resultList = JsonSerializer.Deserialize<List<VideoMetaDataFull>>(File.ReadAllText(pathToJsonFile));
+            return resultList ?? new List<VideoMetaDataFull>();
+        }
+
+
+        // Hier Saich Boy. Der Hyperlink fehlt und der Test läuft noch schief.
+        public string GetReadableDescription()
+        {
+            return Base64Decode(DescriptionBase64);
         }
     }
 }
