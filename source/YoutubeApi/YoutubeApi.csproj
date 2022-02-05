@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\cs-simple-logger\Source\SimpleLogger.csproj" />
+    <ProjectReference Include="..\Common\Common.csproj" />
   </ItemGroup>
 
 </Project>

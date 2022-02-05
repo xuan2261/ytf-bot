@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using BotService;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimpleLogger;
@@ -97,6 +98,16 @@ namespace Tests
             ytManager.StopYoutubeWorker();
             ddd.Wait(TimeSpan.FromSeconds(35));
             Assert.IsTrue(File.Exists(thefile));
+        }
+
+        [TestCleanup]
+        public void CleanUp()
+        {
+            Directory
+                .EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
+                .Where(file => file.EndsWith("Full_Meta_YT.json"))
+                .ToList()
+                .ForEach(File.Delete);
         }
     }
 }

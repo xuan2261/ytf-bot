@@ -26,4 +26,22 @@
     <ProjectReference Include="..\YoutubeApi\YoutubeApi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="2022-01-15T09-09-55Z_Full_Meta_YT.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="2022-01-15T19-20-44Z_Full_Meta_YT.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="2022-01-23T13-10-11Z_Full_Meta_YT.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="2022-02-03T19-20-44Z_Full_Meta_YT.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TelegramProcessedFiles.list">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
