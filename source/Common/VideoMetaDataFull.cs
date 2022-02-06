@@ -6,6 +6,11 @@ namespace Common
 {
     public class VideoMetaDataFull
     {
+        /// <summary>
+        /// SearchPattern: "Full_Meta_YT.json"
+        /// </summary>
+        public static string YoutubeSearchPattern => "Full_Meta_YT.json";
+
         public VideoMetaDataFull()
         {
             Title = string.Empty;

@@ -1,10 +1,10 @@
-﻿using System;
+﻿using BotService;
+using Common;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
-using BotService;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TelegramApi;
 
 namespace Tests
@@ -43,56 +43,29 @@ namespace Tests
             }
         }
 
-       
-        /// <summary>
-        /// Keine Ahnung warum man hier DeploymentItems verwenden soll. Der Scheiß funktioniert ja eh nicht richtig. Bei Verwendung der Attribute
-        /// ClassInitialize und ClassCleanup.
-        /// </summary>
-        [DeploymentItem("2022-01-15T09-09-55Z_Full_Meta_YT.json")]
-        [DeploymentItem("2022-01-23T13-10-11Z_Full_Meta_YT.json")]
-        [DeploymentItem("2022-02-03T19-20-44Z_Full_Meta_YT.json")]
-        [DeploymentItem("TelegramProcessedFiles.list")]
+
+
+        [DeploymentItem("2022-01-15T09-09-55Z_Full_Meta_YT.json", "work")]
+        [DeploymentItem("2022-01-23T13-10-11Z_Full_Meta_YT.json", "work")]
+        [DeploymentItem("2022-02-03T19-20-44Z_Full_Meta_YT.json", "work")]
         [TestMethod]
-        public void TestGetFiles()
+        public void SendDescriptionsOfTwoFullMetaYtFilesIntoChat()
         {
+            var telegramConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").TelegramConfig;
+            var workDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "work");
+            var manager = new TelegramManager(telegramConfig, workDir, VideoMetaDataFull.YoutubeSearchPattern);
 
-            var theList = TelegramManager.FindNotYetProcessedYoutubeMetaFiles(TelegramManager.PathToListOfProcessedFiles, 
-                                                                              searchPattern: "Full_Meta_YT.json");
-            Assert.AreEqual(theList.Count,1);
-            CleanupFullMetaYTFiles();
-        }
+            for (int i = 0; i < 10; i++)
+            {
+                _ = manager.IrgendeinBotWorker();
+                Console.WriteLine($"Startet {i}");
+                Thread.Sleep(TimeSpan.FromSeconds(30));
+            }
 
-
-        /// <summary>
-        /// CleanUp, Initialize and DeploymentItem do not work as expected. MS sucks, no exceptions. Therefore a separate method.
-        /// </summary>
-        public void CleanupFullMetaYTFiles()
-        {
-            Directory
-                .EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
-                .Where(file => file.EndsWith("Full_Meta_YT.json"))
-                .ToList()
-                .ForEach(File.Delete);
-
-            Directory
-                .EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
-                .Where(file => file.EndsWith(TelegramManager.PathToListOfProcessedFiles))
-                .ToList()
-                .ForEach(File.Delete);
-        }
-
-        [TestMethod]
-        public void SendTwoFullDescriptionsIntoChat()
-        {
-            var listOfFilenames = new List<string>();
-            listOfFilenames.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "2022-01-15T09-09-55Z_Full_Meta_YT.json"));
-            listOfFilenames.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "2022-01-23T13-10-11Z_Full_Meta_YT.json"));
-
-            var manager = new TelegramManager(BotConfig.LoadFromJsonFile(@"mybotconfig.json").TelegramConfig);
-            manager.TaskForirgendeinBot(listOfFilenames).Wait();
-
-            Thread.Sleep(TimeSpan.FromSeconds(20));
             Console.WriteLine();
+
+
+            // This is not a unit test. Check your chat to verify if this construct did work.
         }
     }
 }

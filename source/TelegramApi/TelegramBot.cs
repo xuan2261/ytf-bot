@@ -13,10 +13,7 @@ namespace TelegramApi
     public class TelegramBot
     {
         private readonly Logger logger;
-
         private readonly TelegramBotClient telegramBotClient;
-        private readonly AutoResetEvent autoResetForSendMessage = new AutoResetEvent(false);
-
         public readonly string Name;
 
         /// <summary>
@@ -48,27 +45,32 @@ namespace TelegramApi
         /// <param name="chatId">Chat to send a message in.</param>
         /// <param name="messageToPublish">The message to publish.</param>
         /// <param name="timeOut">After seconds an error is logged and there was no message sent.</param>
-        public async void SendToChatAsync(long chatId, string messageToPublish, int timeOut)
+        public async Task SendToChatAsync(long chatId, string messageToPublish, int timeOut)
         {
-            try
-            {
-                var cancellationTokenSource = new CancellationTokenSource();
+            
+            await Task.Run(() =>
+                           {
+                               try
+                               {
+                                   var cancellationTokenSource = new CancellationTokenSource();
+                                   var autoResetForSendMessage = new AutoResetEvent(false);
 
-                this.autoResetForSendMessage.Reset();
-                await InternalSendMessageToChatAsync(chatId, messageToPublish, cancellationTokenSource.Token);
+                                   _ = InternalSendMessageToChatAsync(chatId, messageToPublish, cancellationTokenSource.Token, autoResetForSendMessage);
 
-                if (!this.autoResetForSendMessage.WaitOne(TimeSpan.FromSeconds(timeOut)))
-                {
-                    this.logger.LogError($"TelegramApi timeOut when sending message '{messageToPublish}' to channel '{chatId}'");
-                    cancellationTokenSource.Cancel();
-                }
-                this.logger.LogInfo($"To Telegram chat '{chatId}' was sent message '{messageToPublish}'");
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError(e.Message);
-                throw;
-            }
+                                   if (!autoResetForSendMessage.WaitOne(TimeSpan.FromSeconds(timeOut)))
+                                   {
+                                       this.logger.LogError($"TelegramApi timeOut when sending message '{messageToPublish}' to channel '{chatId}'");
+                                       cancellationTokenSource.Cancel();
+                                   }
+
+                                   this.logger.LogInfo($"To Telegram chat '{chatId}' was sent message '{messageToPublish}'");
+                               }
+                               catch (Exception e)
+                               {
+                                   this.logger.LogError(e.Message);
+                                   throw;
+                               }
+                           });
         }
 
         /// <summary>
@@ -76,7 +78,7 @@ namespace TelegramApi
         /// The Telegram Api documentation is unfortunately very imprecise. It is also not at all clear what is in 'message' if publishing
         /// did not work. 
         /// </summary>
-        private async Task InternalSendMessageToChatAsync(long chatId, string messageToPublish, CancellationToken cts)
+        private async Task InternalSendMessageToChatAsync(long chatId, string messageToPublish, CancellationToken cts, AutoResetEvent myAutoReset)
         {
             var sentMessage = await this.telegramBotClient.SendTextMessageAsync(
                                   chatId: new ChatId(chatId),
@@ -88,7 +90,7 @@ namespace TelegramApi
                 this.logger.LogError("TelegramApi method 'SendTextMessageAsync' returned null. No message was sent to chat");
             }
 
-            this.autoResetForSendMessage.Set();
+            myAutoReset.Set();
         }
     }
 }

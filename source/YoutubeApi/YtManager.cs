@@ -1,5 +1,6 @@
 ﻿
 using System.Text.Json;
+using Common;
 using SimpleLogger;
 
 namespace YoutubeApi
@@ -50,7 +51,7 @@ namespace YoutubeApi
                 {
                     if (task.Result.Count > 0)
                     {
-                        var weReAtNowNowFileName = $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_Full_Meta_YT.json";
+                        var weReAtNowNowFileName = $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{VideoMetaDataFull.YoutubeSearchPattern}";
                         var fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, weReAtNowNowFileName);
                         await File.WriteAllTextAsync(fullPath, JsonSerializer.Serialize(task.Result));
                         callback?.Invoke(weReAtNowNowFileName, "Created file successfully");
@@ -63,7 +64,7 @@ namespace YoutubeApi
                 }
                 else
                 {
-                    var msg = "Timeout, cause of something. Do something. Don't just stand there, kill something!";
+                    var msg = "Timeout StartYoutubeWorkerWorker, cause of something. Do something. Don't just stand there, kill something!";
                     this.logger.LogError(msg);
                     callback?.Invoke("Error", msg);
                 }
