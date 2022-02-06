@@ -28,7 +28,7 @@ namespace TelegramApi
         /// <param name="theLogger"></param>
         public TelegramBot(string privateBotApiToken, string name, Logger? theLogger = null)
         {
-            this.logger = theLogger ?? new Logger("TelegramBot.log");
+            this.logger = theLogger ?? new Logger($"{name}.log");
             this.Name = name;
             try
             {

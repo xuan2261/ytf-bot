@@ -73,10 +73,27 @@ namespace Common
         }
 
 
-        // Hier Saich Boy. Der Hyperlink fehlt und der Test läuft noch schief.
+        /// <summary>
+        /// Creates a readable string with leading link to the video.
+        /// </summary>
+        /// <returns>Readable string</returns>
         public string GetReadableDescription()
         {
-            return Base64Decode(DescriptionBase64);
+            var readableString = BuildYoutubeLinkToVideo() + Environment.NewLine + Environment.NewLine;
+            readableString += Base64Decode(TitleBase64) + Environment.NewLine;
+            readableString += PublishedAtRaw.ToString("yyyy-MM-ddTHH:mm:ssZ") + Environment.NewLine + Environment.NewLine;
+            readableString += "Original Description:" + Environment.NewLine;
+            readableString += Base64Decode(this.DescriptionBase64);
+            return readableString;
+        }
+
+        /// <summary>
+        /// Creates a clickable hyperlink out of self (current video).
+        /// </summary>
+        /// <returns>Clickable hyperlink</returns>
+        public string BuildYoutubeLinkToVideo()
+        {
+            return "https://youtu.be/" + Id;
         }
     }
 }

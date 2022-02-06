@@ -86,7 +86,7 @@ namespace Tests
         {
             var listOfFilenames = new List<string>();
             listOfFilenames.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "2022-01-15T09-09-55Z_Full_Meta_YT.json"));
-            listOfFilenames.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "2022-02-03T19-20-44Z_Full_Meta_YT.json"));
+            listOfFilenames.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "2022-01-23T13-10-11Z_Full_Meta_YT.json"));
 
             var manager = new TelegramManager(BotConfig.LoadFromJsonFile(@"mybotconfig.json").TelegramConfig);
             manager.TaskForirgendeinBot(listOfFilenames).Wait();
