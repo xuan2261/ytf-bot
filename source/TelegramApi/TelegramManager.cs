@@ -5,20 +5,17 @@ namespace TelegramApi
 {
     public class TelegramManager
     {
-        /// <summary>
-        /// Path to the file in which the names of the already processed YoutubeMeta files are located.
-        /// </summary>
-        public static string PathToListOfProcessedFiles => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TelegramProcessedFiles.list");
-
         private readonly Logger logger;
         private bool workerShallRun;
 
         // ReSharper disable once InconsistentNaming
-        private readonly TelegramBot irgendeinBot, unh317_01, blackmetaloid;
-        private readonly Chat haufen, gBm, bM;
+        private readonly TelegramBot irgendeinBot, unh317_01Bot, blackmetaloidBot;
+        private readonly Chat haufenChat, gBmChat, bMChat;
 
         private readonly string workingPath;
         private readonly string irgendeinBotListOfProcessedFiles;
+        private readonly string blackmetaloidBotListOfProcessedFiles;
+        private readonly string unh317_01BotListOfProcessedFiles;
         private readonly string youtubeSearchPattern;
 
         /// <summary>
@@ -30,20 +27,22 @@ namespace TelegramApi
             var irgendeinBotConfig = myConfig.Bots[1];
             var blackmetaloidConfig = myConfig.Bots[2];
 
-            this.haufen = myConfig.Chats[0];
-            this.gBm = myConfig.Chats[1];
-            this.bM = myConfig.Chats[2];
+            this.haufenChat = myConfig.Chats[0];
+            this.gBmChat = myConfig.Chats[1];
+            this.bMChat = myConfig.Chats[2];
 
             this.logger = new Logger("TelegramManager.log");
 
             this.irgendeinBot = new TelegramBot(irgendeinBotConfig.BotToken, irgendeinBotConfig.BotName);
-            this.blackmetaloid = new TelegramBot(blackmetaloidConfig.BotToken, blackmetaloidConfig.BotName);
-            this.unh317_01 = new TelegramBot(unh31701Config.BotToken, unh31701Config.BotName);
+            this.blackmetaloidBot = new TelegramBot(blackmetaloidConfig.BotToken, blackmetaloidConfig.BotName);
+            this.unh317_01Bot = new TelegramBot(unh31701Config.BotToken, unh31701Config.BotName);
 
             this.youtubeSearchPattern = youtubeSearchPattern;
 
             this.workingPath = workingPath;
-            this.irgendeinBotListOfProcessedFiles = Path.Combine(workingPath, "irgendeinBot.list");
+            this.irgendeinBotListOfProcessedFiles = Path.Combine(workingPath, $"{this.irgendeinBot}.list");
+            this.blackmetaloidBotListOfProcessedFiles = Path.Combine(workingPath, $"{this.blackmetaloidBot}.list");
+            this.unh317_01BotListOfProcessedFiles = Path.Combine(workingPath, $"{this.unh317_01Bot}.list");
         }
 
         /// <summary>
@@ -68,17 +67,22 @@ namespace TelegramApi
                            {
                                while (this.workerShallRun)
                                {
-                                   _ = IrgendeinBotWorker();
+                                   _ = IrgendeinBotTaskAsync();
                                    Thread.Sleep(TimeSpan.FromSeconds(30));
                                }
                            });
         }
 
         /// <summary>
-        /// 
+        /// Method executes a task by using the bot irgendeinBot.
+        /// This task has 4 subtasks:
+        /// 1 Find not yet processed youtube meta files
+        /// 2 Send not yet processed files in the chat haufenChat
+        /// 3 Update file with processed files
+        /// 4 Trim the file within the processed file names 
         /// </summary>
-        /// <returns></returns>
-        public async Task IrgendeinBotWorker()
+        /// <returns>Task</returns>
+        public async Task IrgendeinBotTaskAsync()
         {
             try
             {
@@ -91,7 +95,7 @@ namespace TelegramApi
                                                                                                           this.workingPath,
                                                                                                           this.youtubeSearchPattern);
 
-                                   if (SendYoutubeMetaFileInfoToTelegramChat(notYetProcessed, this.irgendeinBot, this.haufen)
+                                   if (SendYoutubeMetaFileInfoToTelegramChat(notYetProcessed, this.irgendeinBot, this.haufenChat)
                                        .Wait(TimeSpan.FromSeconds(10)))
                                    {
                                        FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(this.irgendeinBotListOfProcessedFiles, 
@@ -100,7 +104,7 @@ namespace TelegramApi
                                    }
                                    else
                                    {
-                                       this.logger.LogError("Timeout in IrgendeinBotWorker. Don't just stand there, kill something!");
+                                       this.logger.LogError("Timeout in IrgendeinBotTaskAsync. Don't just stand there, kill something!");
                                    }
                                });
             }

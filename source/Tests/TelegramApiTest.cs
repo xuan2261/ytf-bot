@@ -57,7 +57,7 @@ namespace Tests
 
             for (int i = 0; i < 10; i++)
             {
-                _ = manager.IrgendeinBotWorker();
+                _ = manager.IrgendeinBotTaskAsync();
                 Console.WriteLine($"Startet {i}");
                 Thread.Sleep(TimeSpan.FromSeconds(30));
             }

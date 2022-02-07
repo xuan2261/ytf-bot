@@ -1,5 +1,4 @@
-﻿
-using System.Text.Json;
+﻿using System.Text.Json;
 using Common;
 using SimpleLogger;
 
@@ -13,7 +12,8 @@ namespace YoutubeApi
 
 
         /// <remarks>
-        /// My ass</remarks>
+        /// My ass
+        /// </remarks>
         /// <param name="youtubeApi">YoutubeApi</param>
         public YtManager(YoutubeApi youtubeApi)
         {
@@ -35,12 +35,15 @@ namespace YoutubeApi
         /// In addition, the result is written to a Json file.
         /// </summary>
         /// <param name="channels">Channels that are searched</param>
-        /// <param name="callback">Callback is called when successfully wrote a file and when errors appear. 2 input string, return void.</param>
+        /// <param name="callback">
+        /// Callback is called when successfully wrote a file and when errors appear. 2 input string, return
+        /// void.
+        /// </param>
         /// <param name="listOfExcludedVideos">Filter criterion. The videos in this list should not be included in the result.</param>
         /// <returns>The compiled list of videos is returned and written to a file.</returns>
-        public async Task StartYoutubeWorkerWorker(List<Channel> channels,
-                                                   Action<string, string>? callback=null,
-                                                   List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+        public async Task StartYoutubeWorker(List<Channel> channels,
+                                             Action<string, string>? callback = null,
+                                             List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             this.workerShallRun = true;
             while (this.workerShallRun)
@@ -64,14 +67,15 @@ namespace YoutubeApi
                 }
                 else
                 {
-                    var msg = "Timeout StartYoutubeWorkerWorker, cause of something. Do something. Don't just stand there, kill something!";
+                    var msg = "Timeout StartYoutubeWorker, cause of something. Do something. Don't just stand there, kill something!";
                     this.logger.LogError(msg);
                     callback?.Invoke("Error", msg);
                 }
+
                 Thread.Sleep(TimeSpan.FromSeconds(30));
             }
+
             callback?.Invoke("End", "YTManager stopped working. Press Return to end it all.");
         }
-
     }
 }

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Common
+﻿namespace Common
 {
     public static class FileHandling
     {
@@ -18,10 +12,9 @@ namespace Common
         /// <returns>Returns a list within the full path to youtube meta files that are not processed yet.</returns>
         public static List<string> FindNotYetProcessedYoutubeMetaFiles(string pathToListOfProcessedFileNames, string folderToSearchIn, string searchPattern)
         {
-            var availableYoutubeMetaFiles = Directory
-                                            .EnumerateFiles(folderToSearchIn)
-                                            .Where(file => file.EndsWith(searchPattern))
-                                            .ToList();
+            var availableYoutubeMetaFiles = Directory.EnumerateFiles(folderToSearchIn)
+                                                     .Where(file => file.EndsWith(searchPattern))
+                                                     .ToList();
             var notYetProcessedFileNames = new List<string>();
             if (File.Exists(pathToListOfProcessedFileNames))
             {
@@ -64,8 +57,30 @@ namespace Common
             var lines = File.ReadAllLines(pathToListOfProcessedFiles);
             if (lines.Length > maxEntries)
             {
-                var countToSkip =  lines.Length - maxEntries;
+                var countToSkip = lines.Length - maxEntries;
                 File.WriteAllLines(pathToListOfProcessedFiles, lines.Skip(countToSkip).ToArray());
+            }
+        }
+
+        /// <summary>
+        /// This method searches the directory "folderToSearchIn" for files that satisfy the pattern "searchPattern" and deletes found files
+        /// as soon as more than "maximumFiles" exist.
+        /// The files are sorted by creation date and the oldest files are deleted. 
+        /// </summary>
+        /// <param name="folderToSearchIn">Folder to search in</param>
+        /// <param name="searchPattern">Search pattern</param>
+        /// <param name="maximumFiles">maximum files</param>
+        /// <returns></returns>
+        public static void RollingFileUpdater(string folderToSearchIn, string searchPattern, int maximumFiles)
+        {
+            DirectoryInfo info = new DirectoryInfo(folderToSearchIn);
+            FileInfo[] files = info.GetFiles().Where(file => file.Name.Contains(searchPattern))
+                                              .OrderBy(p => p.CreationTime)
+                                              .ToArray();
+
+            for (int i = 0; i < files.Length-maximumFiles; i++)
+            {
+                File.Delete(files[i].FullName);
             }
         }
     }

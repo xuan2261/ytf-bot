@@ -93,7 +93,7 @@ namespace Tests
             
 
             var ytManager = new YtManager(youtubeApi);
-            var ddd = ytManager.StartYoutubeWorkerWorker(channelList, MyLocalCallback);
+            var ddd = ytManager.StartYoutubeWorker(channelList, MyLocalCallback);
             ddd.Wait(TimeSpan.FromMinutes(1));
             ytManager.StopYoutubeWorker();
             ddd.Wait(TimeSpan.FromSeconds(35));
