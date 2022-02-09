@@ -89,7 +89,7 @@ namespace TelegramApi
                                        this.logger.LogWarning("TimeOut in IrgendeinBotTask async. Check it.");
                                        _ = SendDebubMessageAsync("TimeOut in IrgendeinBotTask async. Check it.");
                                    }
-                                   Thread.Sleep(TimeSpan.FromSeconds(30));
+                                   Thread.Sleep(TimeSpan.FromMinutes(1));
                                }
                            });
         }

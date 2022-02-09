@@ -76,10 +76,16 @@ namespace YoutubeApi
                                                var weReAtNowNowFileName = $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{VideoMetaDataFull.YoutubeSearchPattern}";
                                                var fullPathYoutubeVideoMetaFile = Path.Combine(this.WorkDir, weReAtNowNowFileName);
                                                File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(theTask.Result));
+                                               
+                                               // Todo, Du wolltest die Titel der Videos mit ausgeben. Damit des checksch. Checksch? 
+                                               var title =  theTask.Result.Select(item => item.TitleBase64);
+                                               
+                                               
                                                callback?.Invoke(weReAtNowNowFileName, "Created file successfully");
                                            }
                                            else
                                            {
+                                               callback?.Invoke("Info", "You see me every 10 minutes and when you see me there was nothing to do!");
                                                this.logger.LogInfo("Found no new videos");
                                            }
                                        }
@@ -92,7 +98,7 @@ namespace YoutubeApi
 
                                        // This call guarantees that there are never more or always exactly 50 files of the type VideoMetaDateFull.
                                        FileHandling.RollingFileUpdater(this.WorkDir, VideoMetaDataFull.YoutubeSearchPattern, 50);
-                                       Thread.Sleep(TimeSpan.FromMinutes(5));
+                                       Thread.Sleep(TimeSpan.FromMinutes(10));
                                    }
 
                                    callback?.Invoke("End", "YTManager stopped working. Press Return to end it all.");

@@ -50,14 +50,20 @@ namespace YoutubeApi
             }
         }
 
-        private YouTubeService GetYoutubeService()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public YouTubeService GetYoutubeService()
         {
+            var appName = this.applicationName + $"_{this.iterator:D2}";
             var service = new YouTubeService(new BaseClientService.Initializer()
-            {
-                ApiKey = this.apiKeysDict[this.iterator],
-                ApplicationName = applicationName
+                                             {
+                                                 ApiKey = this.apiKeysDict[this.iterator],
+                                                 ApplicationName = appName
             });
             this.iterator = (this.iterator + 1) % this.apiKeysDict.Count;
+            Logger.LogDebug($"YoutubeServiceCreated with app name {appName}. Iterator was incremeted: {this.iterator}");
             return service;
         }
 
@@ -85,16 +91,18 @@ namespace YoutubeApi
             var resultListOfChannelVideos = new List<VideoMetaDataFull>(maximumResult);
             try
             {
-                var searchListRequest = GetYoutubeService().Search.List("snippet");
+                var service = GetYoutubeService();
+                var searchListRequest = service.Search.List("snippet");
                 searchListRequest.ChannelId = channel.ChannelId;
                 searchListRequest.Type = "video";
                 searchListRequest.Order = SearchResource.ListRequest.OrderEnum.Date;
                 searchListRequest.MaxResults = maximumResult;
                 searchListRequest.PublishedAfter = lastSuccessfulProcessZulu.ToString("yyyy-MM-ddTHH:mm:ssZ");
-
+               
                 // The result of this call contains all the desired videos with all the information.
                 // Unfortunately, only with an incomplete "Description". 
                 var searchListResponse = await searchListRequest.ExecuteAsync();
+                service.Dispose();
 
                 if (searchListResponse.Items.Count > 0)
                 {
@@ -109,13 +117,14 @@ namespace YoutubeApi
                         resultListOfChannelVideos.AddRange(videoList);
                     }
                 }
+                this.Logger.LogDebug("YoutubeApi call was successful. Update TimeStamp in ChannelFiles");
+                SetTimeStampWhenVideoCheckSuccessful(channel, weAreAtNowNow);
             }
             catch (Exception e)
             {
                 this.Logger.LogError("Error, but go on." + Environment.NewLine + e.Message);
             }
 
-            SetTimeStampWhenVideoCheckSuccessful(channel, weAreAtNowNow);
             return resultListOfChannelVideos;
         }
 
@@ -131,7 +140,8 @@ namespace YoutubeApi
 
             try
             {
-                var videoRequest = GetYoutubeService().Videos.List("snippet");
+                var service = GetYoutubeService();
+                var videoRequest = service.Videos.List("snippet");
                 videoRequest.Id = videoId;
                 var videoLisResponse = await videoRequest.ExecuteAsync();
 
@@ -155,6 +165,7 @@ namespace YoutubeApi
 
                     listOfChannelVideos.Add(newVideo);
                 }
+                service.Dispose();
             }
             catch (Exception e)
             {

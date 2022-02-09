@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using BotService;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimpleLogger;
@@ -41,6 +42,20 @@ namespace Tests
             youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKeys, localLogger);
             YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2021, 1, 1));
             return theTestChannel;
+        }
+
+        [TestMethod]
+        public void TestGetYoutubeService()
+        {
+            var localLogger = new Logger("yt_test.log");
+            var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
+            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKeys.GetRange(1,3), localLogger);
+            for (int i = 0; i < 50; i++)
+            {
+                var service = youtubeApi.GetYoutubeService();
+                service.Dispose();
+                Thread.Sleep(1000);
+            }
         }
 
         /// <summary>
