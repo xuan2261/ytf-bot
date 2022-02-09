@@ -32,7 +32,9 @@
     ]
   },
   "youtube": {
-    "apiKey": "your secret api key",
+    "apiKey": [
+      "your secret api key"
+    ],
     "channels": [
       {
         "channelName": "name of channel",

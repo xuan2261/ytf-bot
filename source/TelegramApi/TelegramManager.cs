@@ -10,19 +10,33 @@ namespace TelegramApi
 
         // ReSharper disable once InconsistentNaming
         private readonly TelegramBot irgendeinBot, unh317_01Bot, blackmetaloidBot;
-        private readonly Chat haufenChat, gBmChat, bMChat;
+        private readonly Chat haufenChat, gBmChat, bMChat, debugChannel;
 
-        private readonly string workingPath;
         private readonly string irgendeinBotListOfProcessedFiles;
         private readonly string blackmetaloidBotListOfProcessedFiles;
+        // ReSharper disable once InconsistentNaming
         private readonly string unh317_01BotListOfProcessedFiles;
         private readonly string youtubeSearchPattern;
 
         /// <summary>
+        /// The WorkDir contains all the files needed for the TelegramManager:
+        /// 1.  VideoMetaDataFull to check which videos have been published on the channels.
+        /// 2.  One 'ListOfProcessedFiles' file per task and bot to check which videos from the VideoMetaDataFull files have already been
+        ///     processed by a bot in a specific task.
+        /// </summary>
+        public readonly string WorkDir;
+
+        /// <summary>
         /// Ctor.
         /// </summary>
-        public TelegramManager(TelegramConfig myConfig, string workingPath, string youtubeSearchPattern)
+        public TelegramManager(TelegramConfig myConfig, string youtubeSearchPattern, string workDir)
         {
+            if (!Directory.Exists(workDir))
+            {
+                Directory.CreateDirectory(workDir);
+            }
+            this.WorkDir = workDir;
+
             var unh31701Config = myConfig.Bots[0];
             var irgendeinBotConfig = myConfig.Bots[1];
             var blackmetaloidConfig = myConfig.Bots[2];
@@ -30,6 +44,7 @@ namespace TelegramApi
             this.haufenChat = myConfig.Chats[0];
             this.gBmChat = myConfig.Chats[1];
             this.bMChat = myConfig.Chats[2];
+            this.debugChannel = myConfig.Chats[3];
 
             this.logger = new Logger("TelegramManager.log");
 
@@ -39,10 +54,11 @@ namespace TelegramApi
 
             this.youtubeSearchPattern = youtubeSearchPattern;
 
-            this.workingPath = workingPath;
-            this.irgendeinBotListOfProcessedFiles = Path.Combine(workingPath, $"{this.irgendeinBot}.list");
-            this.blackmetaloidBotListOfProcessedFiles = Path.Combine(workingPath, $"{this.blackmetaloidBot}.list");
-            this.unh317_01BotListOfProcessedFiles = Path.Combine(workingPath, $"{this.unh317_01Bot}.list");
+            this.irgendeinBotListOfProcessedFiles = Path.Combine(this.WorkDir, $"{this.irgendeinBot.Name}.list");
+            this.blackmetaloidBotListOfProcessedFiles = Path.Combine(this.WorkDir, $"{this.blackmetaloidBot.Name}.list");
+            this.unh317_01BotListOfProcessedFiles = Path.Combine(this.WorkDir, $"{this.unh317_01Bot.Name}.list");
+
+            this.logger.LogDebug("Ctor successful");
         }
 
         /// <summary>
@@ -63,11 +79,16 @@ namespace TelegramApi
         /// <returns>Returns the task to have the possibility to wait for it, even if no one would do that.</returns>
         public async Task StartTelegramWorker()
         {
+            this.workerShallRun = true;
             await Task.Run(() =>
                            {
                                while (this.workerShallRun)
                                {
-                                   _ = IrgendeinBotTaskAsync();
+                                   if (!IrgendeinBotTaskAsync().Wait(TimeSpan.FromSeconds(10)))
+                                   {
+                                       this.logger.LogWarning("TimeOut in IrgendeinBotTask async. Check it.");
+                                       _ = SendDebubMessageAsync("TimeOut in IrgendeinBotTask async. Check it.");
+                                   }
                                    Thread.Sleep(TimeSpan.FromSeconds(30));
                                }
                            });
@@ -91,11 +112,11 @@ namespace TelegramApi
                                    // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
                                    // It is probably not necessary to secure this process with a mutex, because each bot must manage
                                    // its own list of already processed files.
-                                   var notYetProcessed = FileHandling.FindNotYetProcessedYoutubeMetaFiles(this.irgendeinBotListOfProcessedFiles,
-                                                                                                          this.workingPath,
+                                   var notYetProcessed = FileHandling.FindNotYetProcessedYoutubeMetaFiles(this.irgendeinBotListOfProcessedFiles, 
+                                                                                                          this.WorkDir,
                                                                                                           this.youtubeSearchPattern);
 
-                                   if (SendYoutubeMetaFileInfoToTelegramChat(notYetProcessed, this.irgendeinBot, this.haufenChat)
+                                   if (SendYoutubeMetaFileInfoToTelegramChatAsync(notYetProcessed, this.irgendeinBot, this.haufenChat)
                                        .Wait(TimeSpan.FromSeconds(10)))
                                    {
                                        FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(this.irgendeinBotListOfProcessedFiles, 
@@ -122,7 +143,7 @@ namespace TelegramApi
         /// <param name="theBot"></param>
         /// <param name="theChat"></param>
         /// <returns></returns>
-        private async Task SendYoutubeMetaFileInfoToTelegramChat(List<string> notYetProcessedFiles, TelegramBot theBot, Chat theChat)
+        private async Task SendYoutubeMetaFileInfoToTelegramChatAsync(List<string> notYetProcessedFiles, TelegramBot theBot, Chat theChat)
         {
             try
             {
@@ -148,6 +169,23 @@ namespace TelegramApi
                                        }
                                    }
                                });
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError(e.Message);
+            }
+        }
+
+        /// <summary>
+        /// Send a message tot the debug channel.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public async Task SendDebubMessageAsync(string message)
+        {
+            try
+            {
+                await this.irgendeinBot.SendToChatAsync(this.debugChannel.ChatId, message, 5);
             }
             catch (Exception e)
             {

@@ -10,9 +10,16 @@ namespace Tests
     [TestClass]
     public class FileHandlingTest
     {
+        public string WorkFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "testFileHandlingWorkDir");
+
         [TestMethod]
         public void TestTrimFile()
         {
+            if (!Directory.Exists(WorkFolder))
+            {
+                Directory.CreateDirectory(WorkFolder);
+            }
+
             var iBimsATestFile = "testFile.txt";
             for (int i = 0; i < 56; i++)
             {
@@ -29,24 +36,29 @@ namespace Tests
         [TestMethod]
         public void TestRollingFileUpdater()
         {
+            if (!Directory.Exists(WorkFolder))
+            {
+                Directory.CreateDirectory(WorkFolder);
+            }
+
             for (int i = 0; i < 15; i++)
             {
-                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"fileUpdater_{i:D2}.txt"), $"File content {i:D2}");
+                File.AppendAllText(Path.Combine(WorkFolder, $"fileUpdater_{i:D2}.txt"), $"File content {i:D2}");
             }
             
-            FileHandling.RollingFileUpdater(AppDomain.CurrentDomain.BaseDirectory, "fileUpdater", 10);
-            var files = Directory.EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
+            FileHandling.RollingFileUpdater(WorkFolder, "fileUpdater", 10);
+            var files = Directory.EnumerateFiles(WorkFolder)
                                  .Where(file => file.Contains("fileUpdater"))
                                  .ToList();
             Assert.IsTrue(files.Count == 10);
-            FileHandling.RollingFileUpdater(AppDomain.CurrentDomain.BaseDirectory, "fileUpdater", 2);
-            files = Directory.EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
+            FileHandling.RollingFileUpdater(WorkFolder, "fileUpdater", 2);
+            files = Directory.EnumerateFiles(WorkFolder)
                              .Where(file => file.Contains("fileUpdater"))
                              .ToList();
             Assert.IsTrue(files.Count == 2);
 
-            FileHandling.RollingFileUpdater(AppDomain.CurrentDomain.BaseDirectory, "fileUpdater", 0);
-            files = Directory.EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
+            FileHandling.RollingFileUpdater(WorkFolder, "fileUpdater", 0);
+            files = Directory.EnumerateFiles(WorkFolder)
                              .Where(file => file.Contains("fileUpdater"))
                              .ToList();
             Assert.IsTrue(files.Count == 0);
@@ -63,10 +75,14 @@ namespace Tests
         [TestMethod]
         public void TestGetFiles()
         {
-            var workfolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "testWorkDir");
-            var listOfProcessedFiles = Path.Combine(workfolder, "listOfProcessedFiles.list");
+            if (!Directory.Exists(WorkFolder))
+            {
+                Directory.CreateDirectory(WorkFolder);
+            }
+
+            var listOfProcessedFiles = Path.Combine(WorkFolder, "listOfProcessedFiles.list");
             var theList = FileHandling.FindNotYetProcessedYoutubeMetaFiles(listOfProcessedFiles,
-                                                                           workfolder,
+                                                                           WorkFolder,
                                                                            VideoMetaDataFull.YoutubeSearchPattern);
             Assert.AreEqual(theList.Count, 1);
             CleanupFullMetaYoutubeFiles();
@@ -79,13 +95,13 @@ namespace Tests
         public void CleanupFullMetaYoutubeFiles()
         {
             Directory
-                .EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
+                .EnumerateFiles(WorkFolder)
                 .Where(file => file.EndsWith(VideoMetaDataFull.YoutubeSearchPattern))
                 .ToList()
                 .ForEach(File.Delete);
 
             Directory
-                .EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
+                .EnumerateFiles(WorkFolder)
                 .Where(file => file.EndsWith("listOfProcessedFiles.list"))
                 .ToList()
                 .ForEach(File.Delete);

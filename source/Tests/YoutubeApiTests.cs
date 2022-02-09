@@ -16,6 +16,8 @@ namespace Tests
     [TestClass]
     public class YoutubeApiTests
     {
+        public string WorkFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "testYoutubeApiWorkDir");
+
         /// <summary>
         /// Returns the test channel and instantiates a youtube api.
         /// </summary>
@@ -26,7 +28,7 @@ namespace Tests
         /// </remarks>
         /// <param name="youtubeApi">The instantiated youtube Api</param>
         /// <returns></returns>
-        private static Channel SetUpTest(out YoutubeApi.YoutubeApi youtubeApi)
+        private static Channel SetUpTest(out YoutubeApi.YoutubeApi youtubeApi, out Logger localLogger)
         {
             var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
             Channel theTestChannel = new Channel
@@ -34,14 +36,15 @@ namespace Tests
                                          ChannelId = "UCOCZKlOz6cNs2qiIhls5cqQ",
                                          ChannelName = "Njal"
                                      };
-            var logger = new Logger("yt_test.log");
-            youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey, logger);
+            localLogger = new Logger("yt_test.log");
+            localLogger.LogDebug("Test was set up.");
+            youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKeys, localLogger);
             YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2021, 1, 1));
             return theTestChannel;
         }
 
         /// <summary>
-        /// Yes, this no UnitTests and it sucks. I had not the time to.
+        /// Yes, this is no UnitTests and it sucks. I had not the time to.
         /// This test calls the main method of the YoutubeApi 'CreateListWithFullVideoMetaDataAsync'. The channel that is written
         /// to the list in the 'SetUpTest' method is tested.
         /// And yes, right again: the test sucks and has to be adjusted as soon as I publish the next video.
@@ -50,7 +53,7 @@ namespace Tests
         [TestMethod]
         public void TestIfListWasReturned()
         {
-            var theTestChannel = SetUpTest(out var youtubeApi);
+            var theTestChannel = SetUpTest(out var youtubeApi, out var localLogger);
 
             var channelList = new List<Channel> { theTestChannel };
             var testList = youtubeApi.CreateListWithFullVideoMetaDataAsync(channelList, 10).Result;
@@ -59,55 +62,49 @@ namespace Tests
         }
 
         /// <summary>
-        /// 
+        /// Test sets back the timestamp file to 1.1.21, so the youtube worker will detect some videos in any case.
+        /// Worker should detect about 8 Videos and write it in one video meta file.
         /// </summary>
         [TestMethod]
         public void StartYoutubeWorkerTest()
         {
             string thefile = string.Empty;
-
-            void MyLocalCallback(string file, string message)
-            {
-                Assert.IsFalse(file == "");
-                if (file != "End")
-                {
-                    thefile = file;
-                }
-
-                Console.WriteLine(file);
-                Console.WriteLine(message);
-            }
-
-            var theTestChannel = SetUpTest(out var youtubeApi);
+            var theTestChannel = SetUpTest(out var youtubeApi, out var localLogger);
             var secondChannel = new Channel
                                 {
                                     ChannelId = "UCraxywJxOEv-zQ2Yvmp4LtA",
                                     ChannelName = "Njals Traum - Thema"
                                 };
             YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(secondChannel, new DateTime(2021, 1, 1));
+
+            void MyLocalCallback(string file, string message)
+            {
+                Assert.IsFalse(file == ""); // Must not happen
+                if (file != "End")
+                {
+                    thefile = file;
+                }
+
+                localLogger.LogDebug($"Callback was called first arg: {file}, second arg: {message}");
+            }
+
             var channelList = new List<Channel>
                               {
                                   theTestChannel,
                                   secondChannel
                               };
             
-
-            var ytManager = new YtManager(youtubeApi);
+            var ytManager = new YtManager(youtubeApi, WorkFolder);
             var ddd = ytManager.StartYoutubeWorker(channelList, MyLocalCallback);
-            ddd.Wait(TimeSpan.FromMinutes(1));
+            localLogger.LogDebug("Just started Youtube Worker. Now wait 10 Seconds.");
+            ddd.Wait(TimeSpan.FromSeconds(10));
+            localLogger.LogDebug("Stopped Youtube Worker and wait another 10 Seconds.");
             ytManager.StopYoutubeWorker();
-            ddd.Wait(TimeSpan.FromSeconds(35));
-            Assert.IsTrue(File.Exists(thefile));
-        }
-
-        [TestCleanup]
-        public void CleanUp()
-        {
-            Directory
-                .EnumerateFiles(AppDomain.CurrentDomain.BaseDirectory)
-                .Where(file => file.EndsWith("Full_Meta_YT.json"))
-                .ToList()
-                .ForEach(File.Delete);
+            ddd.Wait(TimeSpan.FromSeconds(10));
+            localLogger.LogDebug("Done very well. If theres no exception youre good.");
+            
+            // the file was set in the callback. This works in this case, because there will be only one file.
+            Assert.IsTrue(File.Exists(Path.Combine(WorkFolder,thefile)));
         }
     }
 }

@@ -1,33 +1,42 @@
 ﻿using System.Globalization;
 using BotService;
+using Common;
 using SimpleLogger;
+using TelegramApi;
 using YoutubeApi;
 
-Logger myLogger = new Logger();
-myLogger.LogInfo($"Hello, World! I'm the ytf-bot. Zulu time is: {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
+Logger myLogger = new Logger("serviceLogfile.log");
+myLogger.LogInfo("I bims, ein Service");
 
-var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
+var completeServiceConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
+var serviceWorkDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceWorkDir");
 
+myLogger.LogInfo("Start Telegram Worker");
+var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, VideoMetaDataFull.YoutubeSearchPattern, serviceWorkDir);
+_ = telegramManager.StartTelegramWorker();
 
+myLogger.LogInfo("Start Youtube Worker");
+var youtubeApi = new YoutubeApi.YoutubeApi("IrrelevantApplicationName", completeServiceConfig.YoutubeConfig.ApiKeys);
+var myYoutubeManager = new YtManager(youtubeApi, serviceWorkDir);
+_ = myYoutubeManager.StartYoutubeWorker(completeServiceConfig.YoutubeConfig.Channels, MyCallback);
 
-//var privateBotApiToken = botConfig.Telegram.Bots[1].BotToken;
+MyCallback("Now", "Startet everything");
 
-//TelegramApi.TelegramBot telegramApi = new TelegramApi.TelegramBot(privateBotApiToken, myLogger);
+Console.WriteLine("Hit e to exit");
+Console.WriteLine();
+while (Console.ReadKey().Key != ConsoleKey.E)
+{
+    Console.WriteLine();
+    Console.WriteLine("Hit e to exit");
+}
 
-//telegramApi.SendToChat(botConfig.Telegram.Chats[0].ChatId, "My ass hello", 5);
+telegramManager.StopYoutubeWorker();
+myYoutubeManager.StopYoutubeWorker();
 
-//var youtubeManager = new YtManager(botConfig.YoutubeConfig.ApiKey, myLogger);
+Console.WriteLine("All workers stopped");
+Thread.Sleep(TimeSpan.FromSeconds(10));
 
-var channelIds = botConfig.YoutubeConfig.Channels.Select(channel => channel.ChannelId).ToList();
-
-var temp = new List<Channel> { botConfig.YoutubeConfig.Channels[0] };
-//youtubeManager.StartFullVideoMetaDataWorker(temp);
-
-//youtubeApi.CreateListWithFullVideoMetaDataAsync(channelIds, 5);
-
-Console.WriteLine("Async weiter oder ed?");
-
-
-
-Console.WriteLine("Noch result");
-Console.ReadKey();
+void MyCallback(string timeStamp, string message)
+{
+    _ = telegramManager.SendDebubMessageAsync(timeStamp + "  " + message);
+}

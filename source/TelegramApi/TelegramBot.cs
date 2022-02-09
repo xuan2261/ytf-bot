@@ -44,7 +44,7 @@ namespace TelegramApi
         /// </summary>
         /// <param name="chatId">Chat to send a message in.</param>
         /// <param name="messageToPublish">The message to publish.</param>
-        /// <param name="timeOut">After seconds an error is logged and there was no message sent.</param>
+        /// <param name="timeOut">After timeOut seconds an error is logged and there was no message sent.</param>
         public async Task SendToChatAsync(long chatId, string messageToPublish, int timeOut)
         {
             
@@ -57,13 +57,16 @@ namespace TelegramApi
 
                                    _ = InternalSendMessageToChatAsync(chatId, messageToPublish, cancellationTokenSource.Token, autoResetForSendMessage);
 
+                                   var shortMessage = messageToPublish;
+                                   if (messageToPublish.Length > 28) shortMessage = shortMessage.Substring(0, 28);
+
                                    if (!autoResetForSendMessage.WaitOne(TimeSpan.FromSeconds(timeOut)))
                                    {
-                                       this.logger.LogError($"TelegramApi timeOut when sending message '{messageToPublish}' to channel '{chatId}'");
+                                       this.logger.LogError($"TelegramApi timeOut when sending message '{shortMessage}' to channel '{chatId}'");
                                        cancellationTokenSource.Cancel();
                                    }
 
-                                   this.logger.LogInfo($"To Telegram chat '{chatId}' was sent message '{messageToPublish}'");
+                                   this.logger.LogInfo($"To Telegram chat '{chatId}' was sent message '{shortMessage}'");
                                }
                                catch (Exception e)
                                {

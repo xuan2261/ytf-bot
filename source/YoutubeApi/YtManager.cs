@@ -6,17 +6,31 @@ namespace YoutubeApi
 {
     public class YtManager
     {
+
         private readonly YoutubeApi youtubeApi;
         private readonly Logger logger;
         private bool workerShallRun;
 
+        /// <summary>
+        /// The YTManager uses the YoutubeApi to generate a list of VideoMetaDataFull objects. This list is written to files located in the
+        /// WorkDir during the main task of the worker.
+        /// </summary>
+        public readonly string WorkDir;
 
-        /// <remarks>
-        /// My ass
-        /// </remarks>
-        /// <param name="youtubeApi">YoutubeApi</param>
-        public YtManager(YoutubeApi youtubeApi)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="youtubeApi"></param>
+        /// <param name="workDir"></param>
+        public YtManager(YoutubeApi youtubeApi, string workDir)
         {
+            if (!Directory.Exists(workDir))
+            {
+                Directory.CreateDirectory(workDir);
+            }
+
+            this.WorkDir = workDir;
+
             this.logger = youtubeApi.Logger;
             this.youtubeApi = youtubeApi;
         }
@@ -35,9 +49,10 @@ namespace YoutubeApi
         /// In addition, the result is written to a Json file.
         /// </summary>
         /// <param name="channels">Channels that are searched</param>
-        /// <param name="callback">
-        /// Callback is called when successfully wrote a file and when errors appear. 2 input string, return
-        /// void.
+        /// <param name="callback"> Callback is called when
+        /// - successfully wrote a file then arg1: fileName, arg2: Created "file successfully".
+        /// - an error occurs then arg1: "Error", arg2: message
+        /// - regular end of worker then arg1: "End", arg2: message.
         /// </param>
         /// <param name="listOfExcludedVideos">Filter criterion. The videos in this list should not be included in the result.</param>
         /// <returns>The compiled list of videos is returned and written to a file.</returns>
@@ -45,37 +60,49 @@ namespace YoutubeApi
                                              Action<string, string>? callback = null,
                                              List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
-            this.workerShallRun = true;
-            while (this.workerShallRun)
+            try
             {
-                var task = this.youtubeApi.CreateListWithFullVideoMetaDataAsync(channels, 10);
+                await Task.Run(() =>
+                               {
+                                   this.logger.LogDebug("Youtube worker task has started.");
+                                   this.workerShallRun = true;
+                                   while (this.workerShallRun)
+                                   {
+                                       var theTask = this.youtubeApi.CreateListWithFullVideoMetaDataAsync(channels, 10);
+                                       if (theTask.Wait(TimeSpan.FromSeconds(10)))
+                                       {
+                                           if (theTask.Result.Count > 0)
+                                           {
+                                               var weReAtNowNowFileName = $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{VideoMetaDataFull.YoutubeSearchPattern}";
+                                               var fullPathYoutubeVideoMetaFile = Path.Combine(this.WorkDir, weReAtNowNowFileName);
+                                               File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(theTask.Result));
+                                               callback?.Invoke(weReAtNowNowFileName, "Created file successfully");
+                                           }
+                                           else
+                                           {
+                                               this.logger.LogInfo("Found no new videos");
+                                           }
+                                       }
+                                       else
+                                       {
+                                           var msg = "Timeout StartYoutubeWorker, cause of something. Do something. Don't just stand there, kill something!";
+                                           this.logger.LogError(msg);
+                                           callback?.Invoke("Error", msg);
+                                       }
 
-                if (await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(10))) == task)
-                {
-                    if (task.Result.Count > 0)
-                    {
-                        var weReAtNowNowFileName = $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{VideoMetaDataFull.YoutubeSearchPattern}";
-                        var fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, weReAtNowNowFileName);
-                        await File.WriteAllTextAsync(fullPath, JsonSerializer.Serialize(task.Result));
-                        callback?.Invoke(weReAtNowNowFileName, "Created file successfully");
-                    }
-                    else
-                    {
-                        // Create no logs in this case because of myriads of log entries.
-                        //this.logger.LogInfo("Found no new videos");
-                    }
-                }
-                else
-                {
-                    var msg = "Timeout StartYoutubeWorker, cause of something. Do something. Don't just stand there, kill something!";
-                    this.logger.LogError(msg);
-                    callback?.Invoke("Error", msg);
-                }
+                                       // This call guarantees that there are never more or always exactly 50 files of the type VideoMetaDateFull.
+                                       FileHandling.RollingFileUpdater(this.WorkDir, VideoMetaDataFull.YoutubeSearchPattern, 50);
+                                       Thread.Sleep(TimeSpan.FromMinutes(5));
+                                   }
 
-                Thread.Sleep(TimeSpan.FromSeconds(30));
+                                   callback?.Invoke("End", "YTManager stopped working. Press Return to end it all.");
+                               });
             }
-
-            callback?.Invoke("End", "YTManager stopped working. Press Return to end it all.");
+            catch (Exception e)
+            {
+                this.logger.LogError(e.Message);
+            }
+            this.logger.LogDebug("Youtube worker ended correctly. Loop and Task has ended. Method is exited.");
         }
     }
 }

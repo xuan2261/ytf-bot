@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
@@ -15,6 +16,7 @@ namespace FacebookAutomation
     public class FacebookAutomation : IDisposable
     {
         private readonly Logger logger;
+        public string WorkFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "facebookWorkDir");
 
         // css selector to find the cookie accept button
         private static readonly By CssSelectorCookieAccept =
@@ -62,7 +64,7 @@ namespace FacebookAutomation
                 options.AddArgument("--window-size=1500,1200");
                 options.AddExcludedArgument("enable-logging");
 
-                this.webDriver = new ChromeDriver(AppDomain.CurrentDomain.BaseDirectory, options);
+                this.webDriver = new ChromeDriver(WorkFolder, options);
             }
             catch (Exception e)
             {

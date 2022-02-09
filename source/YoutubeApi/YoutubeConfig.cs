@@ -19,15 +19,15 @@ public class Channel
 
 public class YoutubeConfig
 {
-    [JsonPropertyName("apiKey")]
-    public string ApiKey { get; set; }
+    [JsonPropertyName("apiKeys")]
+    public List<string> ApiKeys { get; set; }
 
     [JsonPropertyName("channels")]
     public List<Channel> Channels { get; set; }
 
     public YoutubeConfig()
     {
-        ApiKey = string.Empty;
+        ApiKeys = new List<string>();
         Channels = new List<Channel>();
     }
 }
