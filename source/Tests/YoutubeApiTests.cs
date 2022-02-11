@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using BotService;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -33,10 +34,10 @@ namespace Tests
         {
             var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
             Channel theTestChannel = new Channel
-                                     {
-                                         ChannelId = "UCOCZKlOz6cNs2qiIhls5cqQ",
-                                         ChannelName = "Njal"
-                                     };
+            {
+                ChannelId = "UCOCZKlOz6cNs2qiIhls5cqQ",
+                ChannelName = "Njal"
+            };
             localLogger = new Logger("yt_test.log");
             localLogger.LogDebug("Test was set up.");
             youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKeys, localLogger);
@@ -49,13 +50,25 @@ namespace Tests
         {
             var localLogger = new Logger("yt_test.log");
             var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
-            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKeys.GetRange(1,3), localLogger);
+            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKeys.GetRange(1, 3), localLogger);
             for (int i = 0; i < 50; i++)
             {
                 var service = youtubeApi.GetYoutubeService();
                 service.Dispose();
                 Thread.Sleep(1000);
             }
+        }
+
+        [TestMethod]
+        public void CheckTimeStamp()
+        {
+            var timeStamp = "2022-02-10T02:42:49Z";
+
+            var dateTime = DateTime.ParseExact(timeStamp,
+                                               "yyyy-MM-ddTHH:mm:ssZ",
+                                               System.Globalization.CultureInfo.InvariantCulture);
+
+            var shit = DateTimeOffset.Parse(timeStamp).UtcDateTime;
         }
 
         /// <summary>
@@ -86,10 +99,10 @@ namespace Tests
             string thefile = string.Empty;
             var theTestChannel = SetUpTest(out var youtubeApi, out var localLogger);
             var secondChannel = new Channel
-                                {
-                                    ChannelId = "UCraxywJxOEv-zQ2Yvmp4LtA",
-                                    ChannelName = "Njals Traum - Thema"
-                                };
+            {
+                ChannelId = "UCraxywJxOEv-zQ2Yvmp4LtA",
+                ChannelName = "Njals Traum - Thema"
+            };
             YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(secondChannel, new DateTime(2021, 1, 1));
 
             void MyLocalCallback(string file, string message)
@@ -108,7 +121,7 @@ namespace Tests
                                   theTestChannel,
                                   secondChannel
                               };
-            
+
             var ytManager = new YtManager(youtubeApi, WorkFolder);
             var ddd = ytManager.StartYoutubeWorker(channelList, MyLocalCallback);
             localLogger.LogDebug("Just started Youtube Worker. Now wait 10 Seconds.");
@@ -117,9 +130,9 @@ namespace Tests
             ytManager.StopYoutubeWorker();
             ddd.Wait(TimeSpan.FromSeconds(10));
             localLogger.LogDebug("Done very well. If theres no exception youre good.");
-            
+
             // the file was set in the callback. This works in this case, because there will be only one file.
-            Assert.IsTrue(File.Exists(Path.Combine(WorkFolder,thefile)));
+            Assert.IsTrue(File.Exists(Path.Combine(WorkFolder, thefile)));
         }
     }
 }

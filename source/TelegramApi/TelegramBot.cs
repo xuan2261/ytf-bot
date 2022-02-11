@@ -52,21 +52,22 @@ namespace TelegramApi
                            {
                                try
                                {
-                                   var cancellationTokenSource = new CancellationTokenSource();
-                                   var autoResetForSendMessage = new AutoResetEvent(false);
-
-                                   _ = InternalSendMessageToChatAsync(chatId, messageToPublish, cancellationTokenSource.Token, autoResetForSendMessage);
-
                                    var shortMessage = messageToPublish;
                                    if (messageToPublish.Length > 28) shortMessage = shortMessage.Substring(0, 28);
 
+                                   var cancellationTokenSource = new CancellationTokenSource();
+                                   var autoResetForSendMessage = new AutoResetEvent(false);
+
+                                   this.logger.LogDebug($"Start sending to chat {chatId}. Message: {shortMessage}");
+                                   _ = InternalSendMessageToChatAsync(chatId, messageToPublish, cancellationTokenSource.Token, autoResetForSendMessage);
+
                                    if (!autoResetForSendMessage.WaitOne(TimeSpan.FromSeconds(timeOut)))
                                    {
-                                       this.logger.LogError($"TelegramApi timeOut when sending message '{shortMessage}' to channel '{chatId}'");
+                                       this.logger.LogError($"TimeOut sending to chat {chatId}. Message: {shortMessage}");
                                        cancellationTokenSource.Cancel();
                                    }
 
-                                   this.logger.LogInfo($"To Telegram chat '{chatId}' was sent message '{shortMessage}'");
+                                   this.logger.LogInfo($"Success sending to chat {chatId}. Message: {shortMessage}");
                                }
                                catch (Exception e)
                                {

@@ -71,29 +71,31 @@ namespace YoutubeApi
                                        var theTask = this.youtubeApi.CreateListWithFullVideoMetaDataAsync(channels, 10);
                                        if (theTask.Wait(TimeSpan.FromSeconds(10)))
                                        {
-                                           if (theTask.Result.Count > 0)
+                                           var listOfVideoMetaFiles = theTask.Result;
+                                           if (listOfVideoMetaFiles.Count > 0)
                                            {
-                                               var weReAtNowNowFileName = $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{VideoMetaDataFull.YoutubeSearchPattern}";
+                                               var weReAtNowNowFileName = 
+                                                   $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{VideoMetaDataFull.YoutubeSearchPattern}";
+
                                                var fullPathYoutubeVideoMetaFile = Path.Combine(this.WorkDir, weReAtNowNowFileName);
-                                               File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(theTask.Result));
-                                               
-                                               // Todo, Du wolltest die Titel der Videos mit ausgeben. Damit des checksch. Checksch? 
-                                               var title =  theTask.Result.Select(item => item.TitleBase64);
-                                               
-                                               
-                                               callback?.Invoke(weReAtNowNowFileName, "Created file successfully");
+                                               File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(listOfVideoMetaFiles));
+
+                                               // Log all videos of all channels
+                                               var message = YoutubeApi.CreateMessageWithVideosOfAllChannels(listOfVideoMetaFiles);
+                                               callback?.Invoke("INFO  ***", $"File {weReAtNowNowFileName} created with videos of all channels: {message}");
+                                               this.logger.LogInfo(message);
                                            }
                                            else
                                            {
-                                               callback?.Invoke("Info", "You see me every 10 minutes and when you see me there was nothing to do!");
-                                               this.logger.LogInfo("Found no new videos");
+                                               callback?.Invoke("INFO  ***", "Found no new videos.");
+                                               this.logger.LogInfo("Found no new videos.");
                                            }
                                        }
                                        else
                                        {
                                            var msg = "Timeout StartYoutubeWorker, cause of something. Do something. Don't just stand there, kill something!";
                                            this.logger.LogError(msg);
-                                           callback?.Invoke("Error", msg);
+                                           callback?.Invoke("ERROR ***", msg);
                                        }
 
                                        // This call guarantees that there are never more or always exactly 50 files of the type VideoMetaDateFull.
@@ -101,12 +103,13 @@ namespace YoutubeApi
                                        Thread.Sleep(TimeSpan.FromMinutes(10));
                                    }
 
-                                   callback?.Invoke("End", "YTManager stopped working. Press Return to end it all.");
+                                   callback?.Invoke("END   ***", "YTManager stopped working. Press Return to end it all.");
                                });
             }
             catch (Exception e)
             {
                 this.logger.LogError(e.Message);
+                callback?.Invoke("ERROR ***", "In Worker: " + e.Message);
             }
             this.logger.LogDebug("Youtube worker ended correctly. Loop and Task has ended. Method is exited.");
         }

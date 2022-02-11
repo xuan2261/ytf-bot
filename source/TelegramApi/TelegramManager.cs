@@ -149,23 +149,29 @@ namespace TelegramApi
             {
                 await Task.Run(() =>
                                {
-                                   foreach (var newProcessedFile in notYetProcessedFiles)
+                                   foreach (var newNotProcessedFile in notYetProcessedFiles)
                                    {
-                                       if (File.Exists(newProcessedFile))
+                                       if (File.Exists(newNotProcessedFile))
                                        {
-                                           var listOfMetaVideoDate = VideoMetaDataFull.DeserializeFromFile(newProcessedFile);
-
+                                           var listOfMetaVideoDate = VideoMetaDataFull.DeserializeFromFile(newNotProcessedFile);
+                                          
+                                           // Minimum timeout plus the amount of videos found in file newNotProcessedFile
+                                           var timeOut = 5 + listOfMetaVideoDate.Count;
+                                           
                                            // This construct ensures that its called parallel and the end of the task when sending is completed.
+                                           // This seems to happen very quickly and therefore apparently requires a higher timeout.
+                                           this.logger.LogDebug($"Bot {theBot.Name} start sending async to chat {theChat.ChatName} with id {theChat.ChatId}. TimeOut is 5 + amount of videos: {timeOut}");
                                            var tasks = listOfMetaVideoDate.Select(videoMetaDataFull =>
                                                                                       theBot.SendToChatAsync(
                                                                                           theChat.ChatId,
                                                                                           videoMetaDataFull.GetReadableDescription(),
-                                                                                          5)).ToArray();
+                                                                                          timeOut)).ToArray();
                                            Task.WaitAll(tasks);
+                                           this.logger.LogDebug($"Bot {theBot.Name} stop sending to chat {theChat.ChatName}");
                                        }
                                        else
                                        {
-                                           this.logger.LogError($"File {newProcessedFile} not found");
+                                           this.logger.LogError($"File {newNotProcessedFile} not found");
                                        }
                                    }
                                });
@@ -185,7 +191,7 @@ namespace TelegramApi
         {
             try
             {
-                await this.irgendeinBot.SendToChatAsync(this.debugChannel.ChatId, message, 5);
+                await this.irgendeinBot.SendToChatAsync(this.debugChannel.ChatId, message, TimeSpan.FromSeconds(10).Seconds);
             }
             catch (Exception e)
             {

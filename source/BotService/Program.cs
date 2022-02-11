@@ -38,5 +38,5 @@ Thread.Sleep(TimeSpan.FromSeconds(10));
 
 void MyCallback(string timeStamp, string message)
 {
-    _ = telegramManager.SendDebubMessageAsync(timeStamp + "  " + message);
+    _ = telegramManager.SendDebubMessageAsync(timeStamp + ": " + message);
 }
