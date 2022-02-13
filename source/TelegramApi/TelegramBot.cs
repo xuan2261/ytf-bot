@@ -45,7 +45,7 @@ namespace TelegramApi
         /// <param name="chatId">Chat to send a message in.</param>
         /// <param name="messageToPublish">The message to publish.</param>
         /// <param name="timeOut">After timeOut seconds an error is logged and there was no message sent.</param>
-        public async Task SendToChatAsync(long chatId, string messageToPublish, int timeOut)
+        public async Task SendToChatAsync(Chat theChat, string messageToPublish, int timeOut)
         {
             
             await Task.Run(() =>
@@ -53,21 +53,21 @@ namespace TelegramApi
                                try
                                {
                                    var shortMessage = messageToPublish;
-                                   if (messageToPublish.Length > 28) shortMessage = shortMessage.Substring(0, 28);
+                                   if (messageToPublish.Length > 100) shortMessage = shortMessage.Substring(0, 100);
 
                                    var cancellationTokenSource = new CancellationTokenSource();
                                    var autoResetForSendMessage = new AutoResetEvent(false);
 
-                                   this.logger.LogDebug($"Start sending to chat {chatId}. Message: {shortMessage}");
-                                   _ = InternalSendMessageToChatAsync(chatId, messageToPublish, cancellationTokenSource.Token, autoResetForSendMessage);
+                                   this.logger.LogDebug($"Start sending to chat {theChat.ChatName}. Message: {shortMessage}");
+                                   _ = InternalSendMessageToChatAsync(theChat.ChatId, messageToPublish, cancellationTokenSource.Token, autoResetForSendMessage);
 
                                    if (!autoResetForSendMessage.WaitOne(TimeSpan.FromSeconds(timeOut)))
                                    {
-                                       this.logger.LogError($"TimeOut sending to chat {chatId}. Message: {shortMessage}");
+                                       this.logger.LogError($"TimeOut sending to chat {theChat.ChatName}. Message: {shortMessage}");
                                        cancellationTokenSource.Cancel();
                                    }
 
-                                   this.logger.LogInfo($"Success sending to chat {chatId}. Message: {shortMessage}");
+                                   this.logger.LogInfo($"Success sending to chat {theChat.ChatName}. Message: {shortMessage}");
                                }
                                catch (Exception e)
                                {

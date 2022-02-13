@@ -82,8 +82,8 @@ namespace YoutubeApi
 
                                                // Log all videos of all channels
                                                var message = YoutubeApi.CreateMessageWithVideosOfAllChannels(listOfVideoMetaFiles);
-                                               callback?.Invoke("INFO  ***", $"File {weReAtNowNowFileName} created with videos of all channels: {message}");
-                                               this.logger.LogInfo(message);
+                                               callback?.Invoke("INFO  ***", $"File {weReAtNowNowFileName} created with videos of all channels. {message}");
+                                               this.logger.LogInfo($"File {weReAtNowNowFileName} created with videos of all channels. {message}");
                                            }
                                            else
                                            {

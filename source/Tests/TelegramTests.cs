@@ -34,12 +34,12 @@ namespace Tests
             MakeBot(out var haufenChat, out var irgendeinBot);
 
             var myTelegramBot = new TelegramBot(irgendeinBot.BotToken, irgendeinBot.BotName);
-            _ = myTelegramBot.SendToChatAsync(haufenChat.ChatId, "Hallo Elki, Oli hat dich ganz arg lieb.", 10);
+            _ = myTelegramBot.SendToChatAsync(haufenChat, "Hallo Elki, Oli hat dich ganz arg lieb.", 10);
             Thread.Sleep(TimeSpan.FromSeconds(20));
-            _ = myTelegramBot.SendToChatAsync(haufenChat.ChatId, "Mal 10 :-)", 10);
+            _ = myTelegramBot.SendToChatAsync(haufenChat, "Mal 10 :-)", 10);
             for (int i = 2; i <= 10; i++)
             {
-                _ = myTelegramBot.SendToChatAsync(haufenChat.ChatId, $"Hallo Elki, Oli hat dich ganz arg lieb. {i:D2}", 10);
+                _ = myTelegramBot.SendToChatAsync(haufenChat, $"Hallo Elki, Oli hat dich ganz arg lieb. {i:D2}", 10);
                 Thread.Sleep(TimeSpan.FromSeconds(10));
             }
         }

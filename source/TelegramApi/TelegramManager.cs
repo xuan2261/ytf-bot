@@ -103,7 +103,7 @@ namespace TelegramApi
         /// 4 Trim the file within the processed file names 
         /// </summary>
         /// <returns>Task</returns>
-        public async Task IrgendeinBotTaskAsync()
+        public async Task BlackmetaloidBotTaskAsync()
         {
             try
             {
@@ -112,22 +112,63 @@ namespace TelegramApi
                                    // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
                                    // It is probably not necessary to secure this process with a mutex, because each bot must manage
                                    // its own list of already processed files.
-                                   var notYetProcessed = FileHandling.FindNotYetProcessedYoutubeMetaFiles(this.irgendeinBotListOfProcessedFiles, 
+                                   var notYetProcessed = FileHandling.FindNotYetProcessedYoutubeMetaFiles(this.blackmetaloidBotListOfProcessedFiles, 
                                                                                                           this.WorkDir,
                                                                                                           this.youtubeSearchPattern);
 
-                                   if (SendYoutubeMetaFileInfoToTelegramChatAsync(notYetProcessed, this.irgendeinBot, this.haufenChat)
+                                   if (SendYoutubeMetaFileInfoToTelegramChatAsync(notYetProcessed, this.blackmetaloidBot, this.bMChat)
                                        .Wait(TimeSpan.FromSeconds(10)))
                                    {
-                                       FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(this.irgendeinBotListOfProcessedFiles, 
+                                       FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(this.blackmetaloidBotListOfProcessedFiles, 
                                                                                                     notYetProcessed);
-                                       FileHandling.TrimFileListOfProcessedFile(this.irgendeinBotListOfProcessedFiles, 50);
+                                       FileHandling.TrimFileListOfProcessedFile(this.blackmetaloidBotListOfProcessedFiles, 50);
                                    }
                                    else
                                    {
                                        this.logger.LogError("Timeout in IrgendeinBotTaskAsync. Don't just stand there, kill something!");
                                    }
                                });
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError(e.Message);
+            }
+        }
+
+        /// <summary>
+        /// Method executes a task by using the bot irgendeinBot.
+        /// This task has 4 subtasks:
+        /// 1 Find not yet processed youtube meta files
+        /// 2 Send not yet processed files in the chat haufenChat
+        /// 3 Update file with processed files
+        /// 4 Trim the file within the processed file names 
+        /// </summary>
+        /// <returns>Task</returns>
+        public async Task IrgendeinBotTaskAsync()
+        {
+            try
+            {
+                await Task.Run(() =>
+                {
+                    // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
+                    // It is probably not necessary to secure this process with a mutex, because each bot must manage
+                    // its own list of already processed files.
+                    var notYetProcessed = FileHandling.FindNotYetProcessedYoutubeMetaFiles(this.irgendeinBotListOfProcessedFiles,
+                                                                                           this.WorkDir,
+                                                                                           this.youtubeSearchPattern);
+
+                    if (SendYoutubeMetaFileInfoToTelegramChatAsync(notYetProcessed, this.irgendeinBot, this.haufenChat)
+                        .Wait(TimeSpan.FromSeconds(10)))
+                    {
+                        FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(this.irgendeinBotListOfProcessedFiles,
+                                                                                     notYetProcessed);
+                        FileHandling.TrimFileListOfProcessedFile(this.irgendeinBotListOfProcessedFiles, 50);
+                    }
+                    else
+                    {
+                        this.logger.LogError("Timeout in IrgendeinBotTaskAsync. Don't just stand there, kill something!");
+                    }
+                });
             }
             catch (Exception e)
             {
@@ -163,7 +204,7 @@ namespace TelegramApi
                                            this.logger.LogDebug($"Bot {theBot.Name} start sending async to chat {theChat.ChatName} with id {theChat.ChatId}. TimeOut is 5 + amount of videos: {timeOut}");
                                            var tasks = listOfMetaVideoDate.Select(videoMetaDataFull =>
                                                                                       theBot.SendToChatAsync(
-                                                                                          theChat.ChatId,
+                                                                                          theChat,
                                                                                           videoMetaDataFull.GetReadableDescription(),
                                                                                           timeOut)).ToArray();
                                            Task.WaitAll(tasks);
@@ -191,7 +232,7 @@ namespace TelegramApi
         {
             try
             {
-                await this.irgendeinBot.SendToChatAsync(this.debugChannel.ChatId, message, TimeSpan.FromSeconds(10).Seconds);
+                await this.irgendeinBot.SendToChatAsync(this.debugChannel, message, TimeSpan.FromSeconds(10).Seconds);
             }
             catch (Exception e)
             {

@@ -60,15 +60,21 @@ namespace Tests
         }
 
         [TestMethod]
-        public void CheckTimeStamp()
+        public void CheckThatSpecialVictimsChannel()
         {
-            var timeStamp = "2022-02-10T02:42:49Z";
+            Channel theTestChannel = new Channel
+                                     {
+                                         ChannelId = "UCHvSmXEhCne99aKmiNeSiBQ",
+                                         ChannelName = "Symphonic Black Metal Promotion II"
+            };
+            var localLogger = new Logger("yt_test.log");
+            var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
+            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKeys.GetRange(1, 3), localLogger);
 
-            var dateTime = DateTime.ParseExact(timeStamp,
-                                               "yyyy-MM-ddTHH:mm:ssZ",
-                                               System.Globalization.CultureInfo.InvariantCulture);
-
-            var shit = DateTimeOffset.Parse(timeStamp).UtcDateTime;
+            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2022,02,12,11,00,00));
+            var theTaskBaby = youtubeApi.GetFullVideoMetaDataOfChannelAsync(theTestChannel, 10);
+            theTaskBaby.Wait();
+            var listOfVideos = theTaskBaby.Result;
         }
 
         /// <summary>

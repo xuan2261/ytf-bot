@@ -100,5 +100,17 @@ namespace Common
         {
             return "https://youtu.be/" + Id;
         }
+
+        /// <summary>
+        /// Check the description for the possibility of doing the post on a German channel. 
+        /// </summary>
+        /// <returns></returns>
+        public bool IsGerman()
+        {
+            var result = false;
+            var videoDescription = Base64Decode(this.DescriptionBase64);
+            ;
+            return result;
+        }
     }
 }

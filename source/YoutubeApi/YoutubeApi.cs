@@ -84,7 +84,7 @@ namespace YoutubeApi
         /// <param name="maximumResult">Consider only this amount of results.</param>
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result. To be implemented:-(</param>
         /// <returns>The list of full meta data videos found in the channel.</returns>
-        private async Task<List<VideoMetaDataFull>> GetFullVideoMetaDataOfChannelAsync(Channel channel,
+        public async Task<List<VideoMetaDataFull>> GetFullVideoMetaDataOfChannelAsync(Channel channel,
                                                                                        int maximumResult,
                                                                                        List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
@@ -127,7 +127,7 @@ namespace YoutubeApi
 
                     // Log videos found in one channel
                     Logger.LogDebug(
-                        $"Fond following videos in channel {channel.ChannelName}: {CreateMessageWithVideosOfAllChannels(resultListOfChannelVideos)}");
+                        $"Found videos in {channel.ChannelName}: {CreateMessageWithVideosOfAllChannels(resultListOfChannelVideos)}");
                 }
 
                 Logger.LogDebug(
@@ -275,7 +275,7 @@ namespace YoutubeApi
         public static string CreateMessageWithVideosOfAllChannels(List<VideoMetaDataFull> listOfVideoMetaFiles)
         {
             var titles = listOfVideoMetaFiles.Select(item => VideoMetaDataFull.Base64Decode(item.TitleBase64));
-            var message = "INFO  *** Created files successfully within this videos:" + Environment.NewLine;
+            var message = "Created files successfully within this videos:" + Environment.NewLine;
             foreach (var title in titles)
             {
                 message += title;
