@@ -16,7 +16,7 @@ var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, 
 _ = telegramManager.StartTelegramWorker();
 
 myLogger.LogInfo("Start Youtube Worker");
-var youtubeApi = new YoutubeApi.YoutubeApi("IrrelevantApplicationName", completeServiceConfig.YoutubeConfig.ApiKeys);
+var youtubeApi = new YoutubeApi.YoutubeApi("IrrelevantApplicationName", completeServiceConfig.YoutubeConfig.ApiKey);
 var myYoutubeManager = new YtManager(youtubeApi, serviceWorkDir);
 _ = myYoutubeManager.StartYoutubeWorker(completeServiceConfig.YoutubeConfig.Channels, MyCallback);
 

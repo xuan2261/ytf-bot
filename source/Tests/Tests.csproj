@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\BotService\mybotconfig.json" Link="mybotconfig.json" />
+    <Content Include="..\BotService\mybotconfig.json" Link="mybotconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

@@ -32,17 +32,18 @@
     ]
   },
   "youtube": {
-    "apiKey": [
-      "your secret api key"
-    ],
+    "apiKey": "your api key",
+    "apiKey4Testing": "api key for tests",
     "channels": [
       {
         "channelName": "name of channel",
-        "channelId": "id of channel"
+        "channelId": "id of channel",
+        "channelUploadsPlayListId": "this is the channel id with an U as second character"
       },
       {
         "channelName": "name of second channel",
-        "channelId": "id of second channel"
+        "channelId": "id of second channel",
+        "channelUploadsPlayListId": "this is the channel id with an U as second character"
       }
     ]
   }

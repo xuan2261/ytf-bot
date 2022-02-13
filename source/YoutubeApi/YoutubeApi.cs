@@ -2,6 +2,7 @@
 using Common;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
+using Google.Apis.YouTube.v3.Data;
 using SimpleLogger;
 
 namespace YoutubeApi
@@ -13,14 +14,8 @@ namespace YoutubeApi
         /// </summary>
         private static string TimeStampFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ChannelTimeStamps");
 
-        /// <summary>
-        /// returns yyyy-MM-ddTHH:mm:ssZ
-        /// </summary>
-        private readonly string dateTimeFormatString = "yyyy-MM-ddTHH:mm:ssZ";
         private readonly string applicationName;
-        private readonly Dictionary<int, string> apiKeysDict;
-        private int iterator;
-
+        private readonly string mainApiKey;
         public Logger Logger { get; }
 
         /// <summary>
@@ -28,9 +23,9 @@ namespace YoutubeApi
         /// Initiates the YoutubeService.
         /// </summary>
         /// <param name="applicationName">Name of application (irrelevant)</param>
-        /// <param name="apiKeys">Secret api key</param>
+        /// <param name="apiKey">Secret api key</param>
         /// <param name="theLogger">Logger if available</param>
-        public YoutubeApi(string applicationName, List<string> apiKeys, Logger? theLogger = null)
+        public YoutubeApi(string applicationName, string apiKey, Logger? theLogger = null)
         {
             Logger = theLogger ?? new Logger("YoutubeApi.log");
             try
@@ -40,14 +35,7 @@ namespace YoutubeApi
                     Directory.CreateDirectory(TimeStampFolder);
                 }
 
-                this.apiKeysDict = new Dictionary<int, string>(apiKeys.Count);
-                var localIterator = 0;
-                apiKeys.ForEach(s =>
-                                {
-                                    this.apiKeysDict.Add(localIterator, s);
-                                    localIterator++;
-                                });
-
+                this.mainApiKey = apiKey;
                 this.applicationName = applicationName;
             }
             catch (Exception e)
@@ -58,18 +46,16 @@ namespace YoutubeApi
         }
 
         /// <summary>
+        /// Creates youtube service.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The youtube service</returns>
         public YouTubeService GetYoutubeService()
         {
-            var appName = this.applicationName + $"_{this.iterator:D2}";
             var service = new YouTubeService(new BaseClientService.Initializer()
-                                             {
-                                                 ApiKey = this.apiKeysDict[this.iterator],
-                                                 ApplicationName = appName
-                                             });
-            this.iterator = (this.iterator + 1) % this.apiKeysDict.Count;
-            Logger.LogDebug($"YoutubeServiceCreated with app name {appName}. Iterator was incremeted: {this.iterator}");
+            {
+                ApiKey = this.mainApiKey,
+                ApplicationName = this.applicationName
+            });
             return service;
         }
 
@@ -85,8 +71,8 @@ namespace YoutubeApi
         /// <param name="listOfExcludedVideos">The videos in that list will be excluded from the result. To be implemented:-(</param>
         /// <returns>The list of full meta data videos found in the channel.</returns>
         public async Task<List<VideoMetaDataFull>> GetFullVideoMetaDataOfChannelAsync(Channel channel,
-                                                                                       int maximumResult,
-                                                                                       List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+                                                                                      int maximumResult,
+                                                                                      List<VideoMetaDataSmall>? listOfExcludedVideos = null)
         {
             Logger.LogDebug($"Check {channel.ChannelName} with id {channel.ChannelId}");
 
@@ -100,23 +86,23 @@ namespace YoutubeApi
             try
             {
                 var service = GetYoutubeService();
-                var searchListRequest = service.Search.List("snippet");
-                searchListRequest.ChannelId = channel.ChannelId;
-                searchListRequest.Type = "video";
-                searchListRequest.Order = SearchResource.ListRequest.OrderEnum.Date;
+                var searchListRequest = service.PlaylistItems.List("snippet");
+                searchListRequest.PlaylistId = channel.ChannelUploadsPlayListId;
                 searchListRequest.MaxResults = maximumResult;
-                searchListRequest.PublishedAfter = lastSuccessfulProcessZulu.ToString(this.dateTimeFormatString);
 
                 // The result of this call contains all the desired videos with all the information.
                 // Unfortunately, only with an incomplete "Description". 
                 var searchListResponse = await searchListRequest.ExecuteAsync();
                 service.Dispose();
 
-                if (searchListResponse.Items.Count > 0)
+                var listOfVideoIds = GetListOfVideoIdsPublishedAfter(searchListResponse.Items.ToList(), lastSuccessfulProcessZulu);
+
+                if (listOfVideoIds.Count > 0)
                 {
+
                     // For each searchListResponse, perform another videoRequest. This means that for each video found,
                     // another request is made to obtain the complete "Description".
-                    var tasks = searchListResponse.Items.Select(searchResults => GetVideoMetaData(searchResults.Id.VideoId)).ToArray();
+                    var tasks = listOfVideoIds.Select(GetVideoMetaData).ToArray();
                     Task.WaitAll(tasks);
                     var listOfVideoLists = tasks.Select(task => task.Result);
 
@@ -144,6 +130,33 @@ namespace YoutubeApi
         }
 
         /// <summary>
+        /// Returns a list of video ids that are published after the time stamp 'lastSuccessfulProcessZulu',
+        /// </summary>
+        /// <param name="playListItems">Items found in the playlist.</param>
+        /// <param name="lastSuccessfulProcessZulu">Datetime of last successful check.</param>
+        /// <returns>List of videos published since last successful check.</returns>
+        public List<string> GetListOfVideoIdsPublishedAfter(List<PlaylistItem> playListItems, DateTime lastSuccessfulProcessZulu)
+        {
+            var listOfVideoIds = new List<string>();
+            playListItems.ForEach(item =>
+                                  {
+                                      try
+                                      {
+                                          var itemPublishedAt = DateTimeOffset.Parse(item.Snippet.PublishedAtRaw).UtcDateTime;
+                                          if (DateTime.Compare(lastSuccessfulProcessZulu, itemPublishedAt) < 0)
+                                          {
+                                              listOfVideoIds.Add(item.Snippet.ResourceId.VideoId);
+                                          }
+                                      }
+                                      catch (Exception e)
+                                      {
+                                          Logger.LogDebug(e.Message);
+                                      }
+                                  });
+            return listOfVideoIds;
+        }
+
+        /// <summary>
         /// This method performs a VideoRequest for a single video to get the full description of the video.
         /// The confusing thing about this construct is that the result of this call is in a list.This is due to the YoutubeApi.
         /// </summary>
@@ -165,14 +178,14 @@ namespace YoutubeApi
                 foreach (var video in videoLisResponse.Items)
                 {
                     var newVideo = new VideoMetaDataFull
-                                   {
-                                       Title = video.Snippet.Title,
-                                       TitleBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Title),
-                                       Id = video.Id,
-                                       ChannelId = video.Snippet.ChannelId,
-                                       ChannelTitle = video.Snippet.ChannelTitle,
-                                       DescriptionBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Description)
-                                   };
+                    {
+                        Title = video.Snippet.Title,
+                        TitleBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Title),
+                        Id = video.Id,
+                        ChannelId = video.Snippet.ChannelId,
+                        ChannelTitle = video.Snippet.ChannelTitle,
+                        DescriptionBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Description)
+                    };
 
                     try
                     {
@@ -278,7 +291,7 @@ namespace YoutubeApi
             var message = "Created files successfully within this videos:" + Environment.NewLine;
             foreach (var title in titles)
             {
-                message += title;
+                message += title + Environment.NewLine;
             }
 
             return message;

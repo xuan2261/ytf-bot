@@ -10,24 +10,32 @@ public class Channel
     [JsonPropertyName("channelId")]
     public string ChannelId { get; set; }
 
+    [JsonPropertyName("channelUploadsPlayListId")]
+    public string ChannelUploadsPlayListId { get; set; }
+
     public Channel()
     {
         ChannelName = string.Empty;
         ChannelId = string.Empty;
+        ChannelUploadsPlayListId = string.Empty;
     }
 }
 
 public class YoutubeConfig
 {
-    [JsonPropertyName("apiKeys")]
-    public List<string> ApiKeys { get; set; }
+    [JsonPropertyName("apiKey")]
+    public string ApiKey { get; set; }
+
+    [JsonPropertyName("apiKey4Testing")]
+    public string ApiKey4Testing { get; set; }
 
     [JsonPropertyName("channels")]
     public List<Channel> Channels { get; set; }
 
     public YoutubeConfig()
     {
-        ApiKeys = new List<string>();
+        ApiKey = string.Empty;
+        ApiKey4Testing = string.Empty;
         Channels = new List<Channel>();
     }
 }
