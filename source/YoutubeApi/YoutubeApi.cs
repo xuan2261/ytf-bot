@@ -105,11 +105,7 @@ namespace YoutubeApi
                     var tasks = listOfVideoIds.Select(GetVideoMetaData).ToArray();
                     Task.WaitAll(tasks);
                     var listOfVideoLists = tasks.Select(task => task.Result);
-
-                    foreach (var videoList in listOfVideoLists)
-                    {
-                        resultListOfChannelVideos.AddRange(videoList);
-                    }
+                    resultListOfChannelVideos.AddRange(listOfVideoLists);
 
                     // Log videos found in one channel
                     Logger.LogDebug(
@@ -162,9 +158,9 @@ namespace YoutubeApi
         /// </summary>
         /// <param name="videoId">The video to which the information is fetched.</param>
         /// <returns>This list contains exactly one video. At the moment I'm not sure how awesome it is:-(</returns>
-        public async Task<List<VideoMetaDataFull>> GetVideoMetaData(string videoId)
+        public async Task<VideoMetaDataFull> GetVideoMetaData(string videoId)
         {
-            var listOfChannelVideos = new List<VideoMetaDataFull>();
+            var newVideo = new VideoMetaDataFull();
 
             try
             {
@@ -173,31 +169,31 @@ namespace YoutubeApi
                 videoRequest.Id = videoId;
                 var videoLisResponse = await videoRequest.ExecuteAsync();
 
-                // This construct does not need to be parallelized because int items should only contain a single element.
-                // And if not, so what? The loop is fast and contains no remote calls.
-                foreach (var video in videoLisResponse.Items)
+                // There should be only one element in this collection
+                if (videoLisResponse.Items.Count != 1)
                 {
-                    var newVideo = new VideoMetaDataFull
-                    {
-                        Title = video.Snippet.Title,
-                        TitleBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Title),
-                        Id = video.Id,
-                        ChannelId = video.Snippet.ChannelId,
-                        ChannelTitle = video.Snippet.ChannelTitle,
-                        DescriptionBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Description)
-                    };
+                    Logger.LogWarning($"Video.List response of video {videoId} returned collection with {videoLisResponse.Items.Count} elements");
+                }
+                var video = videoLisResponse.Items.First();
 
-                    try
-                    {
-                        newVideo.PublishedAtRaw = DateTimeOffset.Parse(video.Snippet.PublishedAtRaw).UtcDateTime;
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.LogError(e.Message);
-                        newVideo.PublishedAtRaw = DateTime.UtcNow;
-                    }
+                newVideo = new VideoMetaDataFull
+                {
+                    Title = video.Snippet.Title,
+                    TitleBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Title),
+                    Id = video.Id,
+                    ChannelId = video.Snippet.ChannelId,
+                    ChannelTitle = video.Snippet.ChannelTitle,
+                    DescriptionBase64 = VideoMetaDataFull.Base64Encode(video.Snippet.Description)
+                };
 
-                    listOfChannelVideos.Add(newVideo);
+                try
+                {
+                    newVideo.PublishedAtRaw = DateTimeOffset.Parse(video.Snippet.PublishedAtRaw).UtcDateTime;
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e.Message);
+                    newVideo.PublishedAtRaw = DateTime.UtcNow;
                 }
 
                 service.Dispose();
@@ -207,7 +203,7 @@ namespace YoutubeApi
                 Logger.LogError("Error, but go on." + Environment.NewLine + e.Message);
             }
 
-            return listOfChannelVideos;
+            return newVideo;
         }
 
 

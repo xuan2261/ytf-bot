@@ -65,6 +65,16 @@ namespace Tests
             var listOfVideos = theTaskBaby.Result;
         }
 
+        [TestMethod]
+        public void CheckVideoDataOfAPremiereVideo()
+        {
+            var channel = SetUpTest(out YoutubeApi.YoutubeApi youtubeApi, out Logger  myLogger);
+
+            var task = youtubeApi.GetVideoMetaData("BqsrCVi_5kM");
+            task.Wait();
+            var videoData = task.Result;
+        }
+
         /// <summary>
         /// Yes, this is no UnitTests and it sucks. I had not the time to.
         /// This test calls the main method of the YoutubeApi 'CreateListWithFullVideoMetaDataAsync'. The channel that is written
