@@ -9,7 +9,13 @@ namespace Common
         /// <summary>
         /// SearchPattern: "Full_Meta_YT.json"
         /// </summary>
+        [Obsolete]
         public static string YoutubeSearchPattern => "Full_Meta_YT.json";
+
+        /// <summary>
+        /// Search pattern and file extension for video files.
+        /// </summary>
+        public static string VideoFileSearchPattern => "video";
 
         public VideoMetaDataFull()
         {
@@ -43,13 +49,18 @@ namespace Common
         [JsonPropertyName("descriptionBase64")]
         public string DescriptionBase64 { get; set; }
 
-
+        /// <summary>
+        /// Converts plain string to base64 string.
+        /// </summary>
         public static string Base64Encode(string plainText)
         {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
             return Convert.ToBase64String(plainTextBytes);
         }
 
+        /// <summary>
+        /// Converts base64 string to plain string.
+        /// </summary>
         public static string Base64Decode(string base64EncodedData)
         {
             var base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
@@ -57,13 +68,15 @@ namespace Common
         }
 
         /// <summary>
-        /// Serialize 'videosToSerialize into file 'youtubeVideos.json'.
+        /// Creates the full path to file within videoMetaData based on the id of the Video.
         /// </summary>
-        /// <param name="videosToSerialize">List of videos to serialize.</param>
-        public static void SerializeIntoFile(List<VideoMetaDataFull> videosToSerialize)
+        /// <param name="videoMetaData">File name</param>
+        /// <param name="workingDirectory">Working directory</param>
+        /// <returns>Full path to video meta data file based on the id of the video.</returns>
+        public static string CreateFileName(VideoMetaDataFull videoMetaData, string workingDirectory)
         {
-            var json = JsonSerializer.Serialize(videosToSerialize);
-            File.WriteAllText(@"youtubeVideos.json", json);
+            var fileName = videoMetaData.Id + $".{VideoFileSearchPattern}";
+            return Path.Combine(workingDirectory, fileName);
         }
 
         /// <summary>
@@ -71,6 +84,7 @@ namespace Common
         /// </summary>
         /// <param name="pathToJsonFile">Self-explanatory</param>
         /// <returns>The list of deserialized videos.</returns>
+        [Obsolete]
         public static List<VideoMetaDataFull> DeserializeFromFile(string pathToJsonFile)
         {
             var resultList = JsonSerializer.Deserialize<List<VideoMetaDataFull>>(File.ReadAllText(pathToJsonFile));
@@ -109,7 +123,9 @@ namespace Common
         {
             var result = false;
             var videoDescription = Base64Decode(this.DescriptionBase64);
-            ;
+            
+            // TODO etwas fehlt ja wohl noch!!!
+
             return result;
         }
     }

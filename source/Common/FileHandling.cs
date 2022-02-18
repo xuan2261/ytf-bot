@@ -78,10 +78,49 @@
                                               .OrderBy(p => p.CreationTime)
                                               .ToArray();
 
-            for (int i = 0; i < files.Length-maximumFiles; i++)
+            for (int i = 0; i < files.Length - maximumFiles; i++)
             {
                 File.Delete(files[i].FullName);
             }
+        }
+
+        /// <summary>
+        /// Returns a reduced string list obtained from 'listOfIds'.
+        /// This method searches 'folderToSearchIn' for files whose names match 'searchPattern'. It then checks whether the names of the files
+        /// found contain strings from the 'listOfIds' list.Finally, only strings are returned that are not yet contained in a file name that matches
+        /// the search pattern.
+        /// </summary>
+        /// <param name="listOfIds">List to check if already containing as filename in folderToSearchIn.</param>
+        /// <param name="folderToSearchIn">Directory to be searched.</param>
+        /// <param name="searchPattern">Search pattern.</param>
+        /// <returns>Reduced list of listOfIds.</returns>
+        /// <exception cref="Exception">If there was found less than 0 or more than 1 element(s).</exception>
+        public static List<string> GetIdsOfFilesNotYetIncludedInFolder(List<string> listOfIds, string folderToSearchIn, string searchPattern)
+        {
+            var fileNamesMatchingSearchPattern = Directory.EnumerateFiles(folderToSearchIn)
+                                                     .Where(file => file.EndsWith(searchPattern))
+                                                     .ToList();
+            var idsOfFilesNotYetIncludedInFolder = new List<string>();
+
+            listOfIds.ForEach(currentId =>
+                              {
+                                  var elementsContainingCurrentId = fileNamesMatchingSearchPattern.FindAll(item => item.Contains(currentId));
+                                  if (elementsContainingCurrentId.Count == 0)
+                                  {
+                                      idsOfFilesNotYetIncludedInFolder.Add(currentId);
+                                  }
+                                  else if (elementsContainingCurrentId.Count == 1)
+                                  {
+                                      // In 'folderToSearchIn' there is already a file that corresponds to the search pattern
+                                      // and contains the current Id 'currentId'.
+                                  }
+                                  else
+                                  {
+                                      throw new Exception($"Count of elements found is {elementsContainingCurrentId.Count}. Thats not possible.");
+                                  }
+                              });
+
+            return idsOfFilesNotYetIncludedInFolder;
         }
     }
 }

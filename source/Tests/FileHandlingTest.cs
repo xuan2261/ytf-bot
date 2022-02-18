@@ -1,6 +1,7 @@
 ﻿using Common;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TelegramApi;
@@ -86,6 +87,42 @@ namespace Tests
                                                                            VideoMetaDataFull.YoutubeSearchPattern);
             Assert.AreEqual(theList.Count, 1);
             CleanupFullMetaYoutubeFiles();
+        }
+
+        /// <summary>
+        /// Checks method GetIdsOfFilesNotYetIncludedInFolder.
+        /// </summary>
+        [TestMethod]
+        public void TestGetIdsOfFilesNotYetIncludedInFolder()
+        {
+            if (!Directory.Exists(WorkFolder))
+            {
+                Directory.CreateDirectory(WorkFolder);
+            }
+            var myListOfIds = new List<string>
+                              {
+                                  "11",
+                                  "12",
+                                  "13"
+                              };
+
+            myListOfIds.ForEach(id =>
+                                {
+                                    File.Create(Path.Combine(WorkFolder, $"{id}.video"));
+                                });
+            
+
+            var newList = FileHandling.GetIdsOfFilesNotYetIncludedInFolder(myListOfIds, WorkFolder, "video");
+            Assert.AreEqual(newList.Count, 0);
+
+            myListOfIds.Add("14");
+            myListOfIds.Add("15");
+            newList = FileHandling.GetIdsOfFilesNotYetIncludedInFolder(myListOfIds, WorkFolder, "video");
+            Assert.AreEqual(newList.Count, 2);
+
+            myListOfIds.Clear();
+            newList = FileHandling.GetIdsOfFilesNotYetIncludedInFolder(myListOfIds, WorkFolder, "video");
+            Assert.AreEqual(newList.Count, 0);
         }
 
 

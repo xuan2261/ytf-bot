@@ -6,19 +6,20 @@ namespace YoutubeApi
 {
     public class YtManager
     {
-
         private readonly YoutubeApi youtubeApi;
         private readonly Logger logger;
         private bool workerShallRun;
+        private readonly int maxCountOfRequestedVideosPerChannel = 10;
+        private readonly int minTimeoutForApiCallInSeconds = 5;
 
         /// <summary>
-        /// The YTManager uses the YoutubeApi to generate a list of VideoMetaDataFull objects. This list is written to files located in the
+        /// The YTManager uses the YoutubeApi to generate a list of VideoMetaDataFull objects. This list is written to files
+        /// located in the
         /// WorkDir during the main task of the worker.
         /// </summary>
         public readonly string WorkDir;
 
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="youtubeApi"></param>
         /// <param name="workDir"></param>
@@ -49,41 +50,61 @@ namespace YoutubeApi
         /// In addition, the result is written to a Json file.
         /// </summary>
         /// <param name="channels">Channels that are searched</param>
-        /// <param name="callback"> Callback is called when
+        /// <param name="callback">
+        /// Callback is called when
         /// - successfully wrote a file then arg1: fileName, arg2: Created "file successfully".
         /// - an error occurs then arg1: "Error", arg2: message
         /// - regular end of worker then arg1: "End", arg2: message.
         /// </param>
-        /// <param name="listOfExcludedVideos">Filter criterion. The videos in this list should not be included in the result.</param>
         /// <returns>The compiled list of videos is returned and written to a file.</returns>
         public async Task StartYoutubeWorker(List<Channel> channels,
-                                             Action<string, string>? callback = null,
-                                             List<VideoMetaDataSmall>? listOfExcludedVideos = null)
+                                             Action<string, string>? callback = null)
         {
             try
             {
+                // Dynamic timeout in seconds for calling the main method.
+                var timeOut = this.minTimeoutForApiCallInSeconds + channels.Count * 2;
+
                 await Task.Run(() =>
                                {
                                    this.logger.LogDebug("Youtube worker task has started.");
                                    this.workerShallRun = true;
                                    while (this.workerShallRun)
                                    {
-                                       var theTask = this.youtubeApi.CreateListWithFullVideoMetaDataAsync(channels, 10);
-                                       if (theTask.Wait(TimeSpan.FromSeconds(10)))
+                                       var theTask = this.youtubeApi.CreateListWithFullVideoMetaDataAsync(channels,
+                                                                                                          this.maxCountOfRequestedVideosPerChannel);
+
+                                       if (theTask.Wait(TimeSpan.FromSeconds(timeOut)))
                                        {
-                                           var listOfVideoMetaFiles = theTask.Result;
-                                           if (listOfVideoMetaFiles.Count > 0)
+                                           var listOfVideoMetaOfAllChannels = theTask.Result;
+                                           if (listOfVideoMetaOfAllChannels.Count > 0)
                                            {
-                                               var weReAtNowNowFileName = 
-                                                   $"{DateTime.UtcNow:yyyy-MM-ddTHH-mm-ssZ}_{VideoMetaDataFull.YoutubeSearchPattern}";
 
-                                               var fullPathYoutubeVideoMetaFile = Path.Combine(this.WorkDir, weReAtNowNowFileName);
-                                               File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(listOfVideoMetaFiles));
+                                               listOfVideoMetaOfAllChannels.ForEach(videoMetaData =>
+                                               {
+                                                   this.youtubeApi.CreateVideoMetaDataFileInWorkingDirectory(videoMetaData);
+                                               });
 
-                                               // Log all videos of all channels
-                                               var message = YoutubeApi.CreateMessageWithVideosOfAllChannels(listOfVideoMetaFiles);
-                                               callback?.Invoke("INFO  ***", $"File {weReAtNowNowFileName} created with videos of all channels. {message}");
-                                               this.logger.LogInfo($"File {weReAtNowNowFileName} created with videos of all channels. {message}");
+
+                                               // Dann Aufräumen. Bidde auch dynamisch --> je mehr Channels desto mehr Dateien dürfen existieren.
+                                               var maximumOfFiles = 100; // TODO noch überlegen
+                                               FileHandling.RollingFileUpdater(this.WorkDir, VideoMetaDataFull.VideoFileSearchPattern, );
+
+                                               //var fullPathYoutubeVideoMetaFile = Path.Combine(this.WorkDir, weReAtNowNowFileName);
+                                               //File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(listOfVideoMetaFiles));
+
+
+                                               //// Log all videos of all channels
+                                               //var message = YoutubeApi.CreateMessageWithVideosOfAllChannels(listOfVideoMetaFiles);
+                                               //callback?.Invoke("INFO  ***",
+                                               //                 $"File {message} created with videos of all channels. {message}");
+                                               //this.logger.LogInfo($"File {message} created with videos of all channels. {message}");
+
+
+
+
+
+
                                            }
                                            else
                                            {
@@ -93,7 +114,8 @@ namespace YoutubeApi
                                        }
                                        else
                                        {
-                                           var msg = "Timeout StartYoutubeWorker, cause of something. Do something. Don't just stand there, kill something!";
+                                           var msg =
+                                               "Timeout StartYoutubeWorker, cause of something. Do something. Don't just stand there, kill something!";
                                            this.logger.LogError(msg);
                                            callback?.Invoke("ERROR ***", msg);
                                        }
@@ -111,6 +133,7 @@ namespace YoutubeApi
                 this.logger.LogError(e.Message);
                 callback?.Invoke("ERROR ***", "In Worker: " + e.Message);
             }
+
             this.logger.LogDebug("Youtube worker ended correctly. Loop and Task has ended. Method is exited.");
         }
     }
