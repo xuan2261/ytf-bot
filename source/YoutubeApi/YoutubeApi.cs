@@ -10,7 +10,6 @@ namespace YoutubeApi
     public class YoutubeApi
     {
         private readonly string workDir;
-        private readonly string applicationName;
         private readonly string mainApiKey;
         public Logger Logger { get; }
 
@@ -33,7 +32,6 @@ namespace YoutubeApi
                 }
 
                 this.mainApiKey = apiKey;
-                this.applicationName = "MyYoutubeApi";
             }
             catch (Exception e)
             {
@@ -51,7 +49,7 @@ namespace YoutubeApi
             var service = new YouTubeService(new BaseClientService.Initializer()
             {
                 ApiKey = this.mainApiKey,
-                ApplicationName = this.applicationName
+                ApplicationName = "MyYoutubeApiHasNoWinkle"
             });
             return service;
         }
@@ -212,48 +210,12 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// Creates a video meta data file in the working directory. File name based on the od of the video.
+        /// Creates a video meta data file in the working directory. File name based on the Id of the video.
         /// </summary>
         public void CreateVideoMetaDataFileInWorkingDirectory(VideoMetaDataFull videoMetaData)
         {
             var fullPathYoutubeVideoMetaFile = VideoMetaDataFull.CreateFileName(videoMetaData, this.workDir);
             File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(videoMetaData));
-        }
-
-        /// <summary>
-        /// To create the list of published videos, we only look at the videos that have been published since the last successful
-        /// check. So this method reads the datetime of the lasst successful check for new videos from a file and returns it.
-        /// If file does not exist, we're at now now! This means that you will most likely not get any results when looking for new
-        /// videos.
-        /// Note: Zulu time, no logging no exception handling
-        /// </summary>
-        [Obsolete]
-        public static DateTime GetLastSuccessfulCheckFromFile(Channel channel, DateTime nowNow)
-        {
-            var fullPathFileName = MakeChannelTimeStamp(channel.ChannelId);
-            return File.Exists(fullPathFileName) ? JsonSerializer.Deserialize<DateTime>(File.ReadAllText(fullPathFileName)) : nowNow;
-        }
-
-        /// <summary>
-        /// Each time the list of new videos is successfully read and passed on, the timestamp in the file must be reset.
-        /// Note: Zulu time, no logging, no exception handling
-        /// </summary>
-        [Obsolete]
-        public static void SetTimeStampWhenVideoCheckSuccessful(Channel channel, DateTime nowNow)
-        {
-            File.WriteAllText(MakeChannelTimeStamp(channel.ChannelId), JsonSerializer.Serialize(nowNow));
-        }
-
-        /// <summary>
-        /// Creates the filename of the channel time stamp file.
-        /// </summary>
-        /// <param name="channelId"></param>
-        /// <returns></returns>
-        [Obsolete]
-        public static string MakeChannelTimeStamp(string channelId)
-        {
-           // return Path.Combine(TimeStampFolder, $"{channelId}.json");
-           return "";
         }
 
         /// <summary>

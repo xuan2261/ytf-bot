@@ -1,23 +1,30 @@
-﻿using System.Text.Json;
-using Common;
+﻿using Common;
 using SimpleLogger;
 
 namespace YoutubeApi
 {
     public class YtManager
     {
-        private readonly YoutubeApi youtubeApi;
-        private readonly Logger logger;
-        private bool workerShallRun;
-        private readonly int maxCountOfRequestedVideosPerChannel = 10;
-        private readonly int minTimeoutForApiCallInSeconds = 5;
-
         /// <summary>
         /// The YTManager uses the YoutubeApi to generate a list of VideoMetaDataFull objects. This list is written to files
         /// located in the
         /// WorkDir during the main task of the worker.
         /// </summary>
         public readonly string WorkDir;
+
+        private readonly YoutubeApi youtubeApi;
+        private readonly Logger logger;
+        private bool workerShallRun;
+
+        /// <summary>
+        /// Amount of videos requested on youtube api per channel => 10
+        /// </summary>
+        private int MaxCountOfRequestedVideosPerChannel => 10;
+
+        /// <summary>
+        /// Minimum timeout time in seconds per api call => 5
+        /// </summary>
+        private int MinTimeoutForApiCallInSeconds => 5;
 
         /// <summary>
         /// </summary>
@@ -46,24 +53,18 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// This method returns a list within all metadata of videos that were published in the channels in 'channelIds'.
-        /// In addition, the result is written to a Json file.
+        /// This worker 
         /// </summary>
         /// <param name="channels">Channels that are searched</param>
-        /// <param name="callback">
-        /// Callback is called when
-        /// - successfully wrote a file then arg1: fileName, arg2: Created "file successfully".
-        /// - an error occurs then arg1: "Error", arg2: message
-        /// - regular end of worker then arg1: "End", arg2: message.
+        /// <param name="callback"> Callback arg1 is 'Info' or 'Error'. Arg2 is the detailed message.
         /// </param>
-        /// <returns>The compiled list of videos is returned and written to a file.</returns>
         public async Task StartYoutubeWorker(List<Channel> channels,
                                              Action<string, string>? callback = null)
         {
             try
             {
                 // Dynamic timeout in seconds for calling the main method.
-                var timeOut = this.minTimeoutForApiCallInSeconds + channels.Count * 2;
+                var timeOut = MinTimeoutForApiCallInSeconds + channels.Count * 2;
 
                 await Task.Run(() =>
                                {
@@ -72,39 +73,30 @@ namespace YoutubeApi
                                    while (this.workerShallRun)
                                    {
                                        var theTask = this.youtubeApi.CreateListWithFullVideoMetaDataAsync(channels,
-                                                                                                          this.maxCountOfRequestedVideosPerChannel);
+                                           MaxCountOfRequestedVideosPerChannel);
 
                                        if (theTask.Wait(TimeSpan.FromSeconds(timeOut)))
                                        {
                                            var listOfVideoMetaOfAllChannels = theTask.Result;
                                            if (listOfVideoMetaOfAllChannels.Count > 0)
                                            {
-
                                                listOfVideoMetaOfAllChannels.ForEach(videoMetaData =>
-                                               {
-                                                   this.youtubeApi.CreateVideoMetaDataFileInWorkingDirectory(videoMetaData);
-                                               });
+                                                                                    {
+                                                                                        this.youtubeApi.CreateVideoMetaDataFileInWorkingDirectory(
+                                                                                            videoMetaData);
+                                                                                    });
 
+                                               // Clean up working directory, avoids endless amount of video files in director. Maximum number of
+                                               // files has an overhang of 50%.  50% is a sentimental value.
+                                               var maximumNumberOfFiles = (int)(channels.Count * (MaxCountOfRequestedVideosPerChannel * 1.5));
+                                               FileHandling.RollingFileUpdater(this.WorkDir,
+                                                                               VideoMetaDataFull.VideoFileSearchPattern,
+                                                                               maximumNumberOfFiles);
 
-                                               // Dann Aufräumen. Bidde auch dynamisch --> je mehr Channels desto mehr Dateien dürfen existieren.
-                                               var maximumOfFiles = 100; // TODO noch überlegen
-                                               FileHandling.RollingFileUpdater(this.WorkDir, VideoMetaDataFull.VideoFileSearchPattern, );
-
-                                               //var fullPathYoutubeVideoMetaFile = Path.Combine(this.WorkDir, weReAtNowNowFileName);
-                                               //File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(listOfVideoMetaFiles));
-
-
-                                               //// Log all videos of all channels
-                                               //var message = YoutubeApi.CreateMessageWithVideosOfAllChannels(listOfVideoMetaFiles);
-                                               //callback?.Invoke("INFO  ***",
-                                               //                 $"File {message} created with videos of all channels. {message}");
-                                               //this.logger.LogInfo($"File {message} created with videos of all channels. {message}");
-
-
-
-
-
-
+                                               // Log all videos of all channels
+                                               var message = YoutubeApi.CreateMessageWithVideosOfAllChannels(listOfVideoMetaOfAllChannels);
+                                               callback?.Invoke("INFO  ***", message);
+                                               this.logger.LogInfo(message);
                                            }
                                            else
                                            {
@@ -120,9 +112,7 @@ namespace YoutubeApi
                                            callback?.Invoke("ERROR ***", msg);
                                        }
 
-                                       // This call guarantees that there are never more or always exactly 50 files of the type VideoMetaDateFull.
-                                       FileHandling.RollingFileUpdater(this.WorkDir, VideoMetaDataFull.YoutubeSearchPattern, 50);
-                                       Thread.Sleep(TimeSpan.FromMinutes(10));
+                                       Thread.Sleep(GetSleepTime());
                                    }
 
                                    callback?.Invoke("END   ***", "YTManager stopped working. Press Return to end it all.");
@@ -135,6 +125,17 @@ namespace YoutubeApi
             }
 
             this.logger.LogDebug("Youtube worker ended correctly. Loop and Task has ended. Method is exited.");
+        }
+
+        /// <summary>
+        /// The method controls the frequency of the Api calls. Most channels stick to certain times to publish videos. Comparable to
+        /// prime time on TV. This construct is intended to ensure that fewer api calls take place at night and that
+        /// new videos are searched for more often during prime time.
+        /// </summary>
+        /// <returns>Dynamic sleep time depending on the time of day.</returns>
+        public TimeSpan GetSleepTime()
+        {
+            return TimeSpan.FromMinutes(10);
         }
     }
 }

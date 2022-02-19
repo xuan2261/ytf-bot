@@ -21,45 +21,48 @@ namespace Tests
         public string WorkFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "testYoutubeApiWorkDir");
 
         /// <summary>
-        /// Returns the test channel and instantiates a youtube api.
+        /// Returns a valid youtube api for testing. There is a special api key only for testing for avoiding to reduce the quota.
         /// </summary>
-        /// <remarks>
-        /// Important! Before anything can be tested here, it must be ensured that there is a final successful check for published
-        /// videos of a channel. This means that this method also creates a file with a timestamp that is far in the past. In the
-        /// channel used here, all tests should return all videos of the channel.
-        /// </remarks>
-        /// <param name="youtubeApi">The instantiated youtube Api</param>
-        /// <returns></returns>
-        private static Channel SetUpTest(out YoutubeApi.YoutubeApi youtubeApi, out Logger localLogger)
+        /// <param name="localLogger">Creates a logger for tests.</param>
+        /// <returns>Valid youtube api.</returns>
+        private static YoutubeApi.YoutubeApi SetUpTest(out Logger localLogger)
         {
+            localLogger = new Logger("yt_test.log");
+            localLogger.LogDebug("Test was set up.");
+
             var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
-            Channel theTestChannel = new Channel
+            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey4Testing, localLogger);
+            return youtubeApi;
+        }
+
+        private static Channel GetTestChannel()
+        {
+            return new Channel
             {
                 ChannelId = "UCOCZKlOz6cNs2qiIhls5cqQ",
                 ChannelUploadsPlayListId = "UUOCZKlOz6cNs2qiIhls5cqQ",
                 ChannelName = "Njal"
             };
-            localLogger = new Logger("yt_test.log");
-            localLogger.LogDebug("Test was set up.");
-            youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey4Testing, localLogger);
-            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2021, 1, 1));
-            return theTestChannel;
+        }
+
+        private static Channel GetVictimTestChannel()
+        {
+            return new Channel
+            {
+                ChannelId = "UCHvSmXEhCne99aKmiNeSiBQ",
+                ChannelUploadsPlayListId = "UUHvSmXEhCne99aKmiNeSiBQ",
+                ChannelName = "Symphonic Black Metal Promotion II"
+            };
         }
 
         [TestMethod]
         public void CheckThatSpecialVictimsChannel()
         {
-            Channel theTestChannel = new Channel
-                                     {
-                                         ChannelId = "UCHvSmXEhCne99aKmiNeSiBQ",
-                                         ChannelUploadsPlayListId = "UUHvSmXEhCne99aKmiNeSiBQ",
-                                         ChannelName = "Symphonic Black Metal Promotion II"
-            };
-            var localLogger = new Logger("yt_test.log");
-            var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
-            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey4Testing, localLogger);
+            Channel theTestChannel = GetVictimTestChannel();
+          
+            var youtubeApi = 
 
-            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2022,02,12,11,00,00));
+            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2022, 02, 12, 11, 00, 00));
             var theTaskBaby = youtubeApi.GetFullVideoMetaDataOfChannelAsync(theTestChannel, 10);
             theTaskBaby.Wait();
             var listOfVideos = theTaskBaby.Result;
@@ -68,7 +71,7 @@ namespace Tests
         [TestMethod]
         public void CheckVideoDataOfAPremiereVideo()
         {
-            var channel = SetUpTest(out YoutubeApi.YoutubeApi youtubeApi, out Logger  myLogger);
+            var channel = SetUpTest(out YoutubeApi.YoutubeApi youtubeApi, out Logger myLogger);
 
             var task = youtubeApi.GetVideoMetaData("BqsrCVi_5kM");
             task.Wait();
@@ -112,7 +115,7 @@ namespace Tests
             void MyLocalCallback(string file, string message)
             {
                 Assert.IsFalse(file == ""); // Must not happen
-                
+
                 localLogger.LogDebug($"Callback was called first arg: {file}, second arg: {message}");
             }
 
