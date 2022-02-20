@@ -45,20 +45,19 @@ namespace Tests
         }
 
 
-
-        [DeploymentItem("2022-01-15T09-09-55Z_Full_Meta_YT.json", "testTelegramWorkDir")]
-        [DeploymentItem("2022-01-23T13-10-11Z_Full_Meta_YT.json", "testTelegramWorkDir")]
-        [DeploymentItem("2022-02-03T19-20-44Z_Full_Meta_YT.json", "testTelegramWorkDir")]
+        /// <summary>
+        /// Geht grade nicht
+        /// </summary>
         [TestMethod]
         public void SendDescriptionsOfTwoFullMetaYtFilesIntoChat()
         {
             var logger = new SimpleLogger.Logger();
             var telegramConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").TelegramConfig;
-            var manager = new TelegramManager(telegramConfig, VideoMetaDataFull.YoutubeSearchPattern, WorkFolder);
+            var manager = new TelegramManager(telegramConfig, VideoMetaDataFull.VideoFileSearchPattern, WorkFolder);
 
             for (int i = 0; i < 10; i++)
             {
-                if (!manager.IrgendeinBotTaskAsync().Wait(TimeSpan.FromSeconds(10)))
+                if (!manager.SomeBotToHaufenChatTaskAsync().Wait(TimeSpan.FromSeconds(10)))
                 {
                     logger.LogWarning("There may be a problem in the telegram test. Timeout.");
                 }

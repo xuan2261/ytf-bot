@@ -117,7 +117,7 @@ namespace YoutubeApi
         private List<string> GetListOfVideoIdsNotYetInWorkingDirectory(List<PlaylistItem> playlistItems)
         {
             var listOfVideoIds = playlistItems.Select(item => item.Snippet.ResourceId.VideoId).ToList();
-            return FileHandling.GetIdsOfFilesNotYetIncludedInFolder(listOfVideoIds, this.workDir, VideoMetaDataFull.VideoFileSearchPattern);
+            return FileHandling.ReduceListOfIds(listOfVideoIds, this.workDir, VideoMetaDataFull.VideoFileSearchPattern);
         }
 
         /// <summary>

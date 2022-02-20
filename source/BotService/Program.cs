@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using BotService;
+﻿using BotService;
 using Common;
 using SimpleLogger;
 using TelegramApi;
@@ -12,13 +11,13 @@ var completeServiceConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
 var serviceWorkDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceWorkDir");
 
 myLogger.LogInfo("Start Telegram Worker");
-var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, VideoMetaDataFull.YoutubeSearchPattern, serviceWorkDir);
-_ = telegramManager.StartTelegramWorker();
+var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, VideoMetaDataFull.VideoFileSearchPattern, serviceWorkDir);
+_ = telegramManager.StartSomeBotToHaufenChat();
 
 myLogger.LogInfo("Start Youtube Worker");
-var youtubeApi = new YoutubeApi.YoutubeApi("IrrelevantApplicationName", completeServiceConfig.YoutubeConfig.ApiKey);
+var youtubeApi = new YoutubeApi.YoutubeApi(completeServiceConfig.YoutubeConfig.ApiKey, serviceWorkDir);
 var myYoutubeManager = new YtManager(youtubeApi, serviceWorkDir);
-_ = myYoutubeManager.StartYoutubeWorker(completeServiceConfig.YoutubeConfig.Channels, MyCallback);
+_ = myYoutubeManager.StartYoutubeWorker(completeServiceConfig.YoutubeConfig.Channels, 10, MyCallback);
 
 MyCallback("Now", "Startet everything");
 
@@ -30,7 +29,7 @@ while (Console.ReadKey().Key != ConsoleKey.E)
     Console.WriteLine("Hit e to exit");
 }
 
-telegramManager.StopYoutubeWorker();
+telegramManager.StopSomeBotToHaufenChat();
 myYoutubeManager.StopYoutubeWorker();
 
 Console.WriteLine("All workers stopped");
@@ -38,5 +37,5 @@ Thread.Sleep(TimeSpan.FromSeconds(10));
 
 void MyCallback(string timeStamp, string message)
 {
-    _ = telegramManager.SendDebubMessageAsync(timeStamp + ": " + message);
+    _ = telegramManager.SendDebugMessageAsync(timeStamp + ": " + message);
 }

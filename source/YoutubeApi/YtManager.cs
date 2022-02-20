@@ -17,11 +17,6 @@ namespace YoutubeApi
         private bool workerShallRun;
 
         /// <summary>
-        /// Amount of videos requested on youtube api per channel => 10
-        /// </summary>
-        private int MaxCountOfRequestedVideosPerChannel => 10;
-
-        /// <summary>
         /// Minimum timeout time in seconds per api call => 5
         /// </summary>
         private int MinTimeoutForApiCallInSeconds => 5;
@@ -53,12 +48,14 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// This worker 
+        /// 
         /// </summary>
-        /// <param name="channels">Channels that are searched</param>
-        /// <param name="callback"> Callback arg1 is 'Info' or 'Error'. Arg2 is the detailed message.
-        /// </param>
+        /// <param name="channels">Channels to search videos in</param>
+        /// <param name="maxResultsPerChannel">Maximum of results per channel and api list request</param>
+        /// <param name="callback">Arg1: info and arg2: message.</param>
+        /// <returns></returns>
         public async Task StartYoutubeWorker(List<Channel> channels,
+                                             int maxResultsPerChannel,
                                              Action<string, string>? callback = null)
         {
             try
@@ -73,7 +70,7 @@ namespace YoutubeApi
                                    while (this.workerShallRun)
                                    {
                                        var theTask = this.youtubeApi.CreateListWithFullVideoMetaDataAsync(channels,
-                                           MaxCountOfRequestedVideosPerChannel);
+                                           maxResultsPerChannel);
 
                                        if (theTask.Wait(TimeSpan.FromSeconds(timeOut)))
                                        {
@@ -88,7 +85,7 @@ namespace YoutubeApi
 
                                                // Clean up working directory, avoids endless amount of video files in director. Maximum number of
                                                // files has an overhang of 50%.  50% is a sentimental value.
-                                               var maximumNumberOfFiles = (int)(channels.Count * (MaxCountOfRequestedVideosPerChannel * 1.5));
+                                               var maximumNumberOfFiles = (int)(channels.Count * (maxResultsPerChannel * 1.5));
                                                FileHandling.RollingFileUpdater(this.WorkDir,
                                                                                VideoMetaDataFull.VideoFileSearchPattern,
                                                                                maximumNumberOfFiles);

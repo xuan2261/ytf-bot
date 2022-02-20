@@ -13,13 +13,27 @@ namespace Tests
     {
         public string WorkFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "testFileHandlingWorkDir");
 
-        [TestMethod]
-        public void TestTrimFile()
+        public void SetupTest()
         {
-            if (!Directory.Exists(WorkFolder))
+            if (Directory.Exists(WorkFolder))
+            {
+                // Clean dir
+                var di = new DirectoryInfo(WorkFolder);
+                foreach (var file in di.EnumerateFiles())
+                {
+                    file.Delete();
+                }
+            }
+            else
             {
                 Directory.CreateDirectory(WorkFolder);
             }
+        }
+
+        [TestMethod]
+        public void TestTrimFile()
+        {
+            SetupTest();
 
             var iBimsATestFile = "testFile.txt";
             for (int i = 0; i < 56; i++)
@@ -30,18 +44,15 @@ namespace Tests
             Assert.AreEqual(File.ReadAllLines(iBimsATestFile).Length, 54);
         }
 
-
-        [DeploymentItem("2022-01-15T09-09-55Z_Full_Meta_YT.json")]
-        [DeploymentItem("2022-01-23T13-10-11Z_Full_Meta_YT.json")]
-        [DeploymentItem("2022-02-03T19-20-44Z_Full_Meta_YT.json")]
+        /// <summary>
+        /// Create a few files and tests the rolling file updater.
+        /// </summary>
         [TestMethod]
         public void TestRollingFileUpdater()
         {
-            if (!Directory.Exists(WorkFolder))
-            {
-                Directory.CreateDirectory(WorkFolder);
-            }
+            SetupTest();
 
+            // Create 15 files
             for (int i = 0; i < 15; i++)
             {
                 File.AppendAllText(Path.Combine(WorkFolder, $"fileUpdater_{i:D2}.txt"), $"File content {i:D2}");
@@ -69,79 +80,56 @@ namespace Tests
         /// Keine Ahnung warum man hier DeploymentItems verwenden soll. Der Scheiß funktioniert ja eh nicht richtig. Bei Verwendung der Attribute
         /// ClassInitialize und ClassCleanup.
         /// </summary>
-        [DeploymentItem("2022-01-15T09-09-55Z_Full_Meta_YT.json")]
-        [DeploymentItem("2022-01-23T13-10-11Z_Full_Meta_YT.json")]
-        [DeploymentItem("2022-02-03T19-20-44Z_Full_Meta_YT.json")]
-        [DeploymentItem("listOfProcessedFiles.list")]
         [TestMethod]
-        public void TestGetFiles()
+        public void TestFindNotYetProcessedVideoIdFiles()
         {
-            if (!Directory.Exists(WorkFolder))
-            {
-                Directory.CreateDirectory(WorkFolder);
-            }
+            SetupTest();
+            var myListOfIds = new List<string> { "11", "12", "13" };
 
-            var listOfProcessedFiles = Path.Combine(WorkFolder, "listOfProcessedFiles.list");
-            var theList = FileHandling.FindNotYetProcessedYoutubeMetaFiles(listOfProcessedFiles,
-                                                                           WorkFolder,
-                                                                           VideoMetaDataFull.YoutubeSearchPattern);
+            myListOfIds.ForEach(id =>
+                                {
+                                    File.WriteAllText(Path.Combine(WorkFolder, $"{id}.video"), $"Content egal {id}");
+                                });
+
+            var alreadyProcessed = Path.Combine(WorkFolder, "11.video") + Environment.NewLine + Path.Combine(WorkFolder, "12.video");
+            var fileName = Path.Combine(WorkFolder, "listOfProcessedFiles.list");
+            File.WriteAllText(fileName, alreadyProcessed);
+
+           
+            var theList = FileHandling.FindNotYetProcessedVideoIdFiles(fileName,
+                                                                       WorkFolder,
+                                                                       VideoMetaDataFull.VideoFileSearchPattern);
             Assert.AreEqual(theList.Count, 1);
-            CleanupFullMetaYoutubeFiles();
         }
 
         /// <summary>
-        /// Checks method GetIdsOfFilesNotYetIncludedInFolder.
+        /// Checks method ReduceListOfIds.
         /// </summary>
         [TestMethod]
         public void TestGetIdsOfFilesNotYetIncludedInFolder()
         {
-            if (!Directory.Exists(WorkFolder))
-            {
-                Directory.CreateDirectory(WorkFolder);
-            }
-            var myListOfIds = new List<string>
-                              {
-                                  "11",
-                                  "12",
-                                  "13"
-                              };
+            SetupTest();
+            var myListOfIds = new List<string> {"11", "12", "13" };
 
             myListOfIds.ForEach(id =>
                                 {
                                     File.Create(Path.Combine(WorkFolder, $"{id}.video"));
                                 });
             
-
-            var newList = FileHandling.GetIdsOfFilesNotYetIncludedInFolder(myListOfIds, WorkFolder, "video");
+            // myListOfIds = file list in Workfolder
+            var newList = FileHandling.ReduceListOfIds(myListOfIds, WorkFolder, VideoMetaDataFull.VideoFileSearchPattern);
             Assert.AreEqual(newList.Count, 0);
 
+            // myListOfIds contains two ids that are not yet as a file in the folder
             myListOfIds.Add("14");
             myListOfIds.Add("15");
-            newList = FileHandling.GetIdsOfFilesNotYetIncludedInFolder(myListOfIds, WorkFolder, "video");
+            newList = FileHandling.ReduceListOfIds(myListOfIds, WorkFolder, VideoMetaDataFull.VideoFileSearchPattern);
             Assert.AreEqual(newList.Count, 2);
 
+            // myListOfIds is empty => no results in newList
             myListOfIds.Clear();
-            newList = FileHandling.GetIdsOfFilesNotYetIncludedInFolder(myListOfIds, WorkFolder, "video");
+            newList = FileHandling.ReduceListOfIds(myListOfIds, WorkFolder, VideoMetaDataFull.VideoFileSearchPattern);
             Assert.AreEqual(newList.Count, 0);
-        }
-
-
-        /// <summary>
-        /// CleanUp, Initialize and DeploymentItem do not work as expected. MS sucks, no exceptions. Therefore a separate method.
-        /// </summary>
-        public void CleanupFullMetaYoutubeFiles()
-        {
-            Directory
-                .EnumerateFiles(WorkFolder)
-                .Where(file => file.EndsWith(VideoMetaDataFull.YoutubeSearchPattern))
-                .ToList()
-                .ForEach(File.Delete);
-
-            Directory
-                .EnumerateFiles(WorkFolder)
-                .Where(file => file.EndsWith("listOfProcessedFiles.list"))
-                .ToList()
-                .ForEach(File.Delete);
         }
     }
 }

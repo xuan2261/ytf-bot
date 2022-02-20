@@ -18,7 +18,7 @@ namespace Tests
     [TestClass]
     public class YoutubeApiTests
     {
-        public string WorkFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "testYoutubeApiWorkDir");
+        public static string WorkFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "testYoutubeApiWorkDir");
 
         /// <summary>
         /// Returns a valid youtube api for testing. There is a special api key only for testing for avoiding to reduce the quota.
@@ -27,11 +27,25 @@ namespace Tests
         /// <returns>Valid youtube api.</returns>
         private static YoutubeApi.YoutubeApi SetUpTest(out Logger localLogger)
         {
+            if (Directory.Exists(WorkFolder))
+            {
+                // Clean dir
+                var di = new DirectoryInfo(WorkFolder);
+                foreach (var file in di.EnumerateFiles())
+                {
+                    file.Delete();
+                }
+            }
+            else
+            {
+                Directory.CreateDirectory(WorkFolder);
+            }
+
             localLogger = new Logger("yt_test.log");
             localLogger.LogDebug("Test was set up.");
 
             var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
-            var youtubeApi = new YoutubeApi.YoutubeApi("TestApp", botConfig.YoutubeConfig.ApiKey4Testing, localLogger);
+            var youtubeApi = new YoutubeApi.YoutubeApi(botConfig.YoutubeConfig.ApiKey4Testing, WorkFolder, localLogger);
             return youtubeApi;
         }
 
@@ -45,6 +59,16 @@ namespace Tests
             };
         }
 
+        private static Channel GetTestChannel2()
+        {
+            return new Channel
+            {
+                ChannelId = "UCraxywJxOEv-zQ2Yvmp4LtA",
+                ChannelUploadsPlayListId = "UUraxywJxOEv-zQ2Yvmp4LtA",
+                ChannelName = "Njals Traum - Thema"
+            };
+        }
+
         private static Channel GetVictimTestChannel()
         {
             return new Channel
@@ -55,68 +79,64 @@ namespace Tests
             };
         }
 
+        /// <summary>
+        /// Test for GetFullVideoMetaDataOfChannelAsync
+        /// </summary>
         [TestMethod]
         public void CheckThatSpecialVictimsChannel()
         {
-            Channel theTestChannel = GetVictimTestChannel();
-          
-            var youtubeApi = 
+            Channel victimChannel = GetVictimTestChannel();
+            var youtubeApi = SetUpTest(out Logger localLogger);
 
-            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(theTestChannel, new DateTime(2022, 02, 12, 11, 00, 00));
-            var theTaskBaby = youtubeApi.GetFullVideoMetaDataOfChannelAsync(theTestChannel, 10);
+            var theTaskBaby = youtubeApi.GetFullVideoMetaDataOfChannelAsync(victimChannel, 10);
             theTaskBaby.Wait();
             var listOfVideos = theTaskBaby.Result;
-        }
-
-        [TestMethod]
-        public void CheckVideoDataOfAPremiereVideo()
-        {
-            var channel = SetUpTest(out YoutubeApi.YoutubeApi youtubeApi, out Logger myLogger);
-
-            var task = youtubeApi.GetVideoMetaData("BqsrCVi_5kM");
-            task.Wait();
-            var videoData = task.Result;
+            Assert.AreEqual(listOfVideos.Count, 10);
         }
 
         /// <summary>
-        /// Yes, this is no UnitTests and it sucks. I had not the time to.
-        /// This test calls the main method of the YoutubeApi 'CreateListWithFullVideoMetaDataAsync'. The channel that is written
-        /// to the list in the 'SetUpTest' method is tested.
-        /// And yes, right again: the test sucks and has to be adjusted as soon as I publish the next video.
-        /// ///
+        /// Test for GetVideoMetaData.
+        /// </summary>
+        [TestMethod]
+        public void CheckVideoDataOfAPremiereVideo()
+        {
+            var youtubeApi = SetUpTest(out Logger myLogger);
+            var id = "0OPI5qnpIEE";
+            var task = youtubeApi.GetVideoMetaData(id);
+            task.Wait();
+            var videoData = task.Result;
+            Assert.AreEqual(videoData.Id, id);
+            Assert.AreEqual(videoData.ChannelTitle, "Njal");
+        }
+
+        /// <summary>
+        /// Tests CreateListWithFullVideoMetaDataAsync.
+        /// 
         /// </summary>
         [TestMethod]
         public void TestIfListWasReturned()
         {
-            var theTestChannel = SetUpTest(out var youtubeApi, out var localLogger);
-
-            var channelList = new List<Channel> { theTestChannel };
+            var youtubeApi = SetUpTest(out var localLogger);
+            var channelList = new List<Channel> { GetTestChannel(), GetTestChannel2() };
             var testList = youtubeApi.CreateListWithFullVideoMetaDataAsync(channelList, 10).Result;
-
-            Assert.IsTrue(testList.Count >= 6);
+            Assert.IsTrue(testList.Count >= 9);
         }
 
         /// <summary>
-        /// Test sets back the timestamp file to 1.1.21, so the youtube worker will detect some videos in any case.
-        /// Worker should detect about 8 Videos and write it in one video meta file.
+        /// Test for StartYoutubeWorker in YtManager.
         /// </summary>
         [TestMethod]
         public void StartYoutubeWorkerTest()
         {
-            var theTestChannel = SetUpTest(out var youtubeApi, out var localLogger);
-            var secondChannel = new Channel
-            {
-                ChannelId = "UCraxywJxOEv-zQ2Yvmp4LtA",
-                ChannelUploadsPlayListId = "UUraxywJxOEv-zQ2Yvmp4LtA",
-                ChannelName = "Njals Traum - Thema"
-            };
-            YoutubeApi.YoutubeApi.SetTimeStampWhenVideoCheckSuccessful(secondChannel, new DateTime(2021, 1, 1));
+            var youtubeApi = SetUpTest(out var localLogger);
+            var theTestChannel = GetTestChannel();
+            var secondChannel = GetTestChannel2();
 
-            void MyLocalCallback(string file, string message)
+            void MyLocalCallback(string arg1, string message)
             {
-                Assert.IsFalse(file == ""); // Must not happen
+                Assert.IsFalse(arg1 == ""); // Must not happen
 
-                localLogger.LogDebug($"Callback was called first arg: {file}, second arg: {message}");
+                localLogger.LogDebug($"Callback was called first arg: {arg1}, second arg: {message}");
             }
 
             var channelList = new List<Channel>
@@ -126,15 +146,58 @@ namespace Tests
                               };
 
             var ytManager = new YtManager(youtubeApi, WorkFolder);
-            var ddd = ytManager.StartYoutubeWorker(channelList, MyLocalCallback);
+            var ddd = ytManager.StartYoutubeWorker(channelList, 2, MyLocalCallback);
             localLogger.LogDebug("Just started Youtube Worker. Now wait 10 Seconds.");
             ddd.Wait(TimeSpan.FromSeconds(10));
             localLogger.LogDebug("Stopped Youtube Worker and wait another 10 Seconds.");
             ytManager.StopYoutubeWorker();
             ddd.Wait(TimeSpan.FromSeconds(10));
-            localLogger.LogDebug("Done very well. If theres no exception youre good.");
+            localLogger.LogDebug("Done very well. If theres no exception you're good.");
 
-            //Check output folder manually. There was one file created within all videos.
+            Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 4);
         }
+
+
+        /// <summary>
+        /// Test for StartYoutubeWorker in YtManager.
+        /// </summary>
+        [TestMethod]
+        public void StartYoutubeWorkerAndUpdateRollingFileTest()
+        {
+            var youtubeApi = SetUpTest(out var localLogger);
+
+            for (int i = 0; i < 10; i++)
+            {
+                File.WriteAllText(Path.Combine(WorkFolder, $"{i:D2}.video"), $"Irgenebbes {i:D2}");
+            }
+
+            var theTestChannel = GetTestChannel();
+            var secondChannel = GetTestChannel2();
+
+            void MyLocalCallback(string arg1, string message)
+            {
+                Assert.IsFalse(arg1 == ""); // Must not happen
+
+                localLogger.LogDebug($"Callback was called first arg: {arg1}, second arg: {message}");
+            }
+
+            var channelList = new List<Channel>
+                              {
+                                  theTestChannel,
+                                  secondChannel
+                              };
+            Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 10);
+            var ytManager = new YtManager(youtubeApi, WorkFolder);
+            var ddd = ytManager.StartYoutubeWorker(channelList, 2, MyLocalCallback);
+            localLogger.LogDebug("Just started Youtube Worker. Now wait 10 Seconds.");
+            ddd.Wait(TimeSpan.FromSeconds(10));
+            localLogger.LogDebug("Stopped Youtube Worker and wait another 10 Seconds.");
+            ytManager.StopYoutubeWorker();
+            ddd.Wait(TimeSpan.FromSeconds(10));
+            localLogger.LogDebug("Done very well. If theres no exception you're good.");
+
+            Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 6);
+        }
+
     }
 }

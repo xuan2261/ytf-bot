@@ -53,7 +53,7 @@ namespace TelegramApi
                                try
                                {
                                    var shortMessage = messageToPublish;
-                                   if (messageToPublish.Length > 100) shortMessage = shortMessage.Substring(0, 100);
+                                   if (messageToPublish.Length > 200) shortMessage = shortMessage.Substring(0, 200);
 
                                    var cancellationTokenSource = new CancellationTokenSource();
                                    var autoResetForSendMessage = new AutoResetEvent(false);

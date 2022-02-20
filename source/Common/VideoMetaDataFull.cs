@@ -7,13 +7,7 @@ namespace Common
     public class VideoMetaDataFull
     {
         /// <summary>
-        /// SearchPattern: "Full_Meta_YT.json"
-        /// </summary>
-        [Obsolete]
-        public static string YoutubeSearchPattern => "Full_Meta_YT.json";
-
-        /// <summary>
-        /// Search pattern and file extension for video files.
+        /// Search pattern and file extension for video files => "video"
         /// </summary>
         public static string VideoFileSearchPattern => "video";
 
@@ -84,11 +78,10 @@ namespace Common
         /// </summary>
         /// <param name="pathToJsonFile">Self-explanatory</param>
         /// <returns>The list of deserialized videos.</returns>
-        [Obsolete]
-        public static List<VideoMetaDataFull> DeserializeFromFile(string pathToJsonFile)
+        public static VideoMetaDataFull DeserializeFromFile(string pathToJsonFile)
         {
-            var resultList = JsonSerializer.Deserialize<List<VideoMetaDataFull>>(File.ReadAllText(pathToJsonFile));
-            return resultList ?? new List<VideoMetaDataFull>();
+            var resultList = JsonSerializer.Deserialize<VideoMetaDataFull>(File.ReadAllText(pathToJsonFile));
+            return resultList ?? new VideoMetaDataFull();
         }
 
 

@@ -3,23 +3,24 @@
     public static class FileHandling
     {
         /// <summary>
-        /// Method finds the youtube meta video files that are not yet processed.
+        /// Method finds thevideo id files that are not yet processed.
         /// Files with a freely definable content exist in the current directory. The file names of these files end with
         /// "searchPattern". It is assumed that these files are somehow processed and the already processed files are located as a
-        /// string in the text file "pathToListOfProcessedFileNames".This method creates a list of file names that have not yet been
-        /// processed and are therefore not in the file "pathToListOfProcessedFileNames".
+        /// string in the text file "pathToFileOfProcessedVideoIds". This method creates a list of file names that have not yet been
+        /// processed and are therefore not in the file "pathToFileOfProcessedVideoIds".
         /// </summary>
-        /// <returns>Returns a list within the full path to youtube meta files that are not processed yet.</returns>
-        public static List<string> FindNotYetProcessedYoutubeMetaFiles(string pathToListOfProcessedFileNames, string folderToSearchIn, string searchPattern)
+        /// <returns>Returns a list within the full paths to youtube meta files (videoId files) that are not processed yet.</returns>
+        public static List<string> FindNotYetProcessedVideoIdFiles(string pathToFileOfProcessedVideoIds, string folderToSearchIn, string searchPattern)
         {
-            var availableYoutubeMetaFiles = Directory.EnumerateFiles(folderToSearchIn)
+            var videoIdFiles = Directory.EnumerateFiles(folderToSearchIn)
                                                      .Where(file => file.EndsWith(searchPattern))
                                                      .ToList();
             var notYetProcessedFileNames = new List<string>();
-            if (File.Exists(pathToListOfProcessedFileNames))
+
+            if (File.Exists(pathToFileOfProcessedVideoIds))
             {
-                var listOfProcessedYoutubeFiles = File.ReadAllLines(pathToListOfProcessedFileNames).ToList();
-                availableYoutubeMetaFiles.ForEach(fullPathToFile =>
+                var listOfProcessedYoutubeFiles = File.ReadAllLines(pathToFileOfProcessedVideoIds).ToList();
+                videoIdFiles.ForEach(fullPathToFile =>
                 {
                     if (!listOfProcessedYoutubeFiles.Contains(fullPathToFile))
                     {
@@ -29,9 +30,10 @@
             }
             else
             {
-                // If there is not yet a file that logs which youtube meta files have been processed, a list of the names of all the
-                // youtube meta files that can be found is returned.
-                return availableYoutubeMetaFiles;
+                // If there is not yet a file that logs which youtube meta files have been processed, a file within all paths to videoId files
+                // is generated. In most cases this meas that this is the first run of this method and an empty list is returned.
+                File.AppendAllLines(pathToFileOfProcessedVideoIds, videoIdFiles);
+                return notYetProcessedFileNames;
             }
             return notYetProcessedFileNames;
         }
@@ -90,12 +92,12 @@
         /// found contain strings from the 'listOfIds' list.Finally, only strings are returned that are not yet contained in a file name that matches
         /// the search pattern.
         /// </summary>
-        /// <param name="listOfIds">List to check if already containing as filename in folderToSearchIn.</param>
+        /// <param name="listOfIds">List to reduce. Items that are already containing as file name in folderToSearchIn are deleted.</param>
         /// <param name="folderToSearchIn">Directory to be searched.</param>
         /// <param name="searchPattern">Search pattern.</param>
         /// <returns>Reduced list of listOfIds.</returns>
         /// <exception cref="Exception">If there was found less than 0 or more than 1 element(s).</exception>
-        public static List<string> GetIdsOfFilesNotYetIncludedInFolder(List<string> listOfIds, string folderToSearchIn, string searchPattern)
+        public static List<string> ReduceListOfIds(List<string> listOfIds, string folderToSearchIn, string searchPattern)
         {
             var fileNamesMatchingSearchPattern = Directory.EnumerateFiles(folderToSearchIn)
                                                      .Where(file => file.EndsWith(searchPattern))
@@ -112,11 +114,11 @@
                                   else if (elementsContainingCurrentId.Count == 1)
                                   {
                                       // In 'folderToSearchIn' there is already a file that corresponds to the search pattern
-                                      // and contains the current Id 'currentId'.
+                                      // and contains the current Id 'currentId'. So there's is nothing to do.
                                   }
                                   else
                                   {
-                                      throw new Exception($"Count of elements found is {elementsContainingCurrentId.Count}. Thats not possible.");
+                                      throw new Exception($"Count of elements found is {elementsContainingCurrentId.Count}. That's not possible.");
                                   }
                               });
 
