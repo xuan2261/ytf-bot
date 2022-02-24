@@ -60,6 +60,8 @@ namespace YoutubeApi
         {
             try
             {
+                CheckAndCreateChannelSubDirectories(channels);
+
                 // Dynamic timeout in seconds for calling the main method.
                 var timeOut = MinTimeoutForApiCallInSeconds + channels.Count * 2;
 
@@ -82,16 +84,12 @@ namespace YoutubeApi
                                                                                         this.youtubeApi.CreateVideoMetaDataFileInWorkingDirectory(
                                                                                             videoMetaData);
                                                                                     });
-
-                                               // Clean up working directory, avoids endless amount of video files in director. Maximum number of
-                                               // files has an overhang of 50%.  50% is a sentimental value.
-                                               var maximumNumberOfFiles = (int)(channels.Count * (maxResultsPerChannel * 1.5));
-                                               FileHandling.RollingFileUpdater(this.WorkDir,
-                                                                               VideoMetaDataFull.VideoFileSearchPattern,
-                                                                               maximumNumberOfFiles);
-
+                                               
+                                               // Avoid unlimited files in directories 
+                                               CleanUpWorkingDirectories(channels, maxResultsPerChannel); 
+                                               
                                                // Log all videos of all channels
-                                               var message = YoutubeApi.CreateMessageWithVideosOfAllChannels(listOfVideoMetaOfAllChannels);
+                                               var message = YoutubeApi.CreateMessageWithVideoDataMetaInformation(listOfVideoMetaOfAllChannels);
                                                callback?.Invoke("INFO  ***", message);
                                                this.logger.LogInfo(message);
                                            }
@@ -122,6 +120,39 @@ namespace YoutubeApi
             }
 
             this.logger.LogDebug("Youtube worker ended correctly. Loop and Task has ended. Method is exited.");
+        }
+
+        /// <summary>
+        /// Clean up working directories, avoids endless amount of video files in directories. Maximum number of files has an overhang of 50%.
+        /// 50% is a sentimental value.
+        /// </summary>
+        /// <param name="maxResultsPerChannel">Maximum of results per channel and api list request></param>;
+        /// <param name="channels">All channels to be cleaned up.</param>
+        private void CleanUpWorkingDirectories(List<Channel> channels, int maxResultsPerChannel)
+        {
+            var maximumNumberOfFiles = (int)(maxResultsPerChannel * 1.5);
+            channels.ForEach(channel =>
+                             {
+                                 FileHandling.RollingFileUpdater(VideoMetaDataFull.GetChannelSubDir(this.WorkDir, channel.ChannelId),
+                                                                 VideoMetaDataFull.VideoFileSearchPattern,
+                                                                 maximumNumberOfFiles);
+                             });
+        }
+
+        /// <summary>
+        /// Create channel sub directories, because the channel videos are stored in subfolders per channel.
+        /// </summary>
+        /// <param name="channels">All channels to create a subfolder for.</param>
+        public void CheckAndCreateChannelSubDirectories(List<Channel> channels)
+        {
+            channels.ForEach(channel =>
+                             {
+                                 var directoryName = VideoMetaDataFull.GetChannelSubDir(this.WorkDir, channel.ChannelId);
+                                 if (!Directory.Exists(directoryName))
+                                 {
+                                     Directory.CreateDirectory(directoryName);
+                                 }
+                             });
         }
 
         /// <summary>

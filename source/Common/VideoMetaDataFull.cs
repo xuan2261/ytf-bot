@@ -62,15 +62,16 @@ namespace Common
         }
 
         /// <summary>
-        /// Creates the full path to file within videoMetaData based on the id of the Video.
+        /// Creates the full path with subfolder to file within videoMetaData based on the id of the Video.
+        /// Subfolder is channel name.
         /// </summary>
         /// <param name="videoMetaData">File name</param>
         /// <param name="workingDirectory">Working directory</param>
         /// <returns>Full path to video meta data file based on the id of the video.</returns>
-        public static string CreateFileName(VideoMetaDataFull videoMetaData, string workingDirectory)
+        public static string CreateFileNameWithSubFolder(VideoMetaDataFull videoMetaData, string workingDirectory)
         {
             var fileName = videoMetaData.Id + $".{VideoFileSearchPattern}";
-            return Path.Combine(workingDirectory, fileName);
+            return Path.Combine(GetChannelSubDir(workingDirectory, videoMetaData.ChannelId), fileName);
         }
 
         /// <summary>
@@ -120,6 +121,11 @@ namespace Common
             // TODO etwas fehlt ja wohl noch!!!
 
             return result;
+        }
+
+        public static string GetChannelSubDir(string workDir, string channelId)
+        {
+            return Path.Combine(workDir, channelId);
         }
     }
 }

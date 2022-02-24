@@ -35,7 +35,7 @@ myYoutubeManager.StopYoutubeWorker();
 Console.WriteLine("All workers stopped");
 Thread.Sleep(TimeSpan.FromSeconds(10));
 
-void MyCallback(string timeStamp, string message)
+void MyCallback(string arg1, string message)
 {
-    _ = telegramManager.SendDebugMessageAsync(timeStamp + ": " + message);
+    _ = telegramManager.SendDebugMessageAsync(arg1 + ": " + message);
 }

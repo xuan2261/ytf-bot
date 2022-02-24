@@ -53,21 +53,21 @@ namespace TelegramApi
                                try
                                {
                                    var shortMessage = messageToPublish;
-                                   if (messageToPublish.Length > 200) shortMessage = shortMessage.Substring(0, 200);
+                                   if (messageToPublish.Length > 29) shortMessage = shortMessage.Substring(0, 29);
 
                                    var cancellationTokenSource = new CancellationTokenSource();
                                    var autoResetForSendMessage = new AutoResetEvent(false);
 
-                                   this.logger.LogDebug($"Start sending to chat {theChat.ChatName}. Message: {shortMessage}");
+                                   // this.logger.LogDebug($"Start sending to chat {theChat.ChatName}. Message: {shortMessage}");
                                    _ = InternalSendMessageToChatAsync(theChat.ChatId, messageToPublish, cancellationTokenSource.Token, autoResetForSendMessage);
 
                                    if (!autoResetForSendMessage.WaitOne(TimeSpan.FromSeconds(timeOut)))
                                    {
-                                       this.logger.LogError($"TimeOut sending to chat {theChat.ChatName}. Message: {shortMessage}");
+                                       this.logger.LogError($"TimeOut sending to chat {theChat.ChatName}. Message: {shortMessage}...");
                                        cancellationTokenSource.Cancel();
                                    }
 
-                                   this.logger.LogInfo($"Success sending to chat {theChat.ChatName}. Message: {shortMessage}");
+                                   this.logger.LogDebug($"Success sending to chat {theChat.ChatName}. Message: {shortMessage}...");
                                }
                                catch (Exception e)
                                {

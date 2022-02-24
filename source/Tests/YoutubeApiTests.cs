@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using BotService;
+using Common;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimpleLogger;
 using YoutubeApi;
@@ -65,7 +66,7 @@ namespace Tests
             {
                 ChannelId = "UCraxywJxOEv-zQ2Yvmp4LtA",
                 ChannelUploadsPlayListId = "UUraxywJxOEv-zQ2Yvmp4LtA",
-                ChannelName = "Njals Traum - Thema"
+                ChannelName = "Njals Traum - Topic"
             };
         }
 
@@ -154,7 +155,10 @@ namespace Tests
             ddd.Wait(TimeSpan.FromSeconds(10));
             localLogger.LogDebug("Done very well. If theres no exception you're good.");
 
-            Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 4);
+            var folder1 = VideoMetaDataFull.GetChannelSubDir(WorkFolder, theTestChannel.ChannelId);
+            var folder2 = VideoMetaDataFull.GetChannelSubDir(WorkFolder, secondChannel.ChannelId);
+            Assert.AreEqual(Directory.GetFiles(folder1).Length, 2);
+            Assert.AreEqual(Directory.GetFiles(folder2).Length, 2);
         }
 
 
@@ -165,14 +169,16 @@ namespace Tests
         public void StartYoutubeWorkerAndUpdateRollingFileTest()
         {
             var youtubeApi = SetUpTest(out var localLogger);
-
-            for (int i = 0; i < 10; i++)
-            {
-                File.WriteAllText(Path.Combine(WorkFolder, $"{i:D2}.video"), $"Irgenebbes {i:D2}");
-            }
-
             var theTestChannel = GetTestChannel();
             var secondChannel = GetTestChannel2();
+
+            // Geht schief, weil die Subfolder noch nicht erstellt sind!!!!
+            // TODO Fuck my Life
+            for (int i = 0; i < 10; i++)
+            {
+                File.WriteAllText(Path.Combine(VideoMetaDataFull.GetChannelSubDir(WorkFolder, theTestChannel.ChannelId), $"{i:D2}.video"), $"Irgenebbes {i:D2}");
+                File.WriteAllText(Path.Combine(VideoMetaDataFull.GetChannelSubDir(WorkFolder, secondChannel.ChannelId), $"{i:D2}.video"), $"Irgenebbes {i:D2}");
+            }
 
             void MyLocalCallback(string arg1, string message)
             {
@@ -186,7 +192,7 @@ namespace Tests
                                   theTestChannel,
                                   secondChannel
                               };
-            Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 10);
+           // Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 10);
             var ytManager = new YtManager(youtubeApi, WorkFolder);
             var ddd = ytManager.StartYoutubeWorker(channelList, 2, MyLocalCallback);
             localLogger.LogDebug("Just started Youtube Worker. Now wait 10 Seconds.");
@@ -196,7 +202,10 @@ namespace Tests
             ddd.Wait(TimeSpan.FromSeconds(10));
             localLogger.LogDebug("Done very well. If theres no exception you're good.");
 
-            Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 6);
+            var folder1 = VideoMetaDataFull.GetChannelSubDir(WorkFolder, theTestChannel.ChannelId);
+            var folder2 = VideoMetaDataFull.GetChannelSubDir(WorkFolder, secondChannel.ChannelId);
+            Assert.AreEqual(Directory.GetFiles(folder1).Length, 3);
+            Assert.AreEqual(Directory.GetFiles(folder2).Length, 3);
         }
 
     }

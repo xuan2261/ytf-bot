@@ -98,7 +98,7 @@ namespace YoutubeApi
 
                     // Log videos found in one channel
                     Logger.LogDebug(
-                        $"Found videos in {channel.ChannelName}: {CreateMessageWithVideosOfAllChannels(resultListOfChannelVideos)}");
+                        $"Found videos in {channel.ChannelName}: {CreateMessageWithVideoDataMetaInformation(resultListOfChannelVideos)}");
                 }
             }
             catch (Exception e)
@@ -214,7 +214,7 @@ namespace YoutubeApi
         /// </summary>
         public void CreateVideoMetaDataFileInWorkingDirectory(VideoMetaDataFull videoMetaData)
         {
-            var fullPathYoutubeVideoMetaFile = VideoMetaDataFull.CreateFileName(videoMetaData, this.workDir);
+            var fullPathYoutubeVideoMetaFile = VideoMetaDataFull.CreateFileNameWithSubFolder(videoMetaData, this.workDir);
             File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(videoMetaData));
         }
 
@@ -223,13 +223,12 @@ namespace YoutubeApi
         /// </summary>
         /// <param name="listOfVideoMetaFiles">List of videos</param>
         /// <returns>readable string</returns>
-        public static string CreateMessageWithVideosOfAllChannels(List<VideoMetaDataFull> listOfVideoMetaFiles)
+        public static string CreateMessageWithVideoDataMetaInformation(List<VideoMetaDataFull> listOfVideoMetaFiles)
         {
-            var titles = listOfVideoMetaFiles.Select(item => VideoMetaDataFull.Base64Decode(item.TitleBase64));
             var message = "Created files successfully within this videos:" + Environment.NewLine;
-            foreach (var title in titles)
+            foreach (var video in listOfVideoMetaFiles)
             {
-                message += title + Environment.NewLine;
+                message += VideoMetaDataFull.Base64Decode(video.TitleBase64) + $" - {video.Id}" + Environment.NewLine;
             }
 
             return message;
