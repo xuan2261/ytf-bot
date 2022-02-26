@@ -36,6 +36,11 @@ namespace Tests
                 {
                     file.Delete();
                 }
+
+                foreach (var directory in di.EnumerateDirectories())
+                {
+                    Directory.Delete(directory.FullName, true);
+                }
             }
             else
             {
@@ -99,7 +104,7 @@ namespace Tests
         /// Test for GetVideoMetaData.
         /// </summary>
         [TestMethod]
-        public void CheckVideoDataOfAPremiereVideo()
+        public void CheckVideoDataOfAVideo()
         {
             var youtubeApi = SetUpTest(out Logger myLogger);
             var id = "0OPI5qnpIEE";
@@ -125,6 +130,7 @@ namespace Tests
 
         /// <summary>
         /// Test for StartYoutubeWorker in YtManager.
+        /// Check two channels and pick up 2 videos each.
         /// </summary>
         [TestMethod]
         public void StartYoutubeWorkerTest()
@@ -163,37 +169,37 @@ namespace Tests
 
 
         /// <summary>
-        /// Test for StartYoutubeWorker in YtManager.
+        /// The test also checks the RollingFileUpdater functionality.
         /// </summary>
         [TestMethod]
         public void StartYoutubeWorkerAndUpdateRollingFileTest()
         {
+            // Setup. The test is set up normally. However, you must ensure that channel directories already exist before the worker is started.
+            // These channel directories contain any number of dummy video files. The test also checks the RollingFileUpdater functionality.
             var youtubeApi = SetUpTest(out var localLogger);
+            void MyLocalCallback(string arg1, string message)
+            {
+                Assert.IsFalse(arg1 == ""); // Must not happen
+                localLogger.LogDebug($"Callback was called first arg: {arg1}, second arg: {message}");
+            }
+
             var theTestChannel = GetTestChannel();
             var secondChannel = GetTestChannel2();
+            var channelList = new List<Channel> { theTestChannel, secondChannel };
 
-            // Geht schief, weil die Subfolder noch nicht erstellt sind!!!!
-            // TODO Fuck my Life
+            // Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 10);
+            var ytManager = new YtManager(youtubeApi, WorkFolder);
+            ytManager.CheckAndCreateChannelSubDirectories(channelList);
+
             for (int i = 0; i < 10; i++)
             {
                 File.WriteAllText(Path.Combine(VideoMetaDataFull.GetChannelSubDir(WorkFolder, theTestChannel.ChannelId), $"{i:D2}.video"), $"Irgenebbes {i:D2}");
                 File.WriteAllText(Path.Combine(VideoMetaDataFull.GetChannelSubDir(WorkFolder, secondChannel.ChannelId), $"{i:D2}.video"), $"Irgenebbes {i:D2}");
             }
 
-            void MyLocalCallback(string arg1, string message)
-            {
-                Assert.IsFalse(arg1 == ""); // Must not happen
-
-                localLogger.LogDebug($"Callback was called first arg: {arg1}, second arg: {message}");
-            }
-
-            var channelList = new List<Channel>
-                              {
-                                  theTestChannel,
-                                  secondChannel
-                              };
-           // Assert.AreEqual(Directory.GetFiles(WorkFolder).Length, 10);
-            var ytManager = new YtManager(youtubeApi, WorkFolder);
+            // Actual test. Each channel directory should now contain 10 dummy *.video files. The worker should fetch 2 real videos per channel
+            // with the given parameters and then clean up the channel directories. Cleaning up means that each channel directory contains
+            // only 150% of the number of videos fetched. Each channel directory may therefore contain 3 files. 
             var ddd = ytManager.StartYoutubeWorker(channelList, 2, MyLocalCallback);
             localLogger.LogDebug("Just started Youtube Worker. Now wait 10 Seconds.");
             ddd.Wait(TimeSpan.FromSeconds(10));
@@ -208,5 +214,30 @@ namespace Tests
             Assert.AreEqual(Directory.GetFiles(folder2).Length, 3);
         }
 
+        /// <summary>
+        /// This test writes 10 video files into the corresponding subfolder. Then 2 files are deleted from the subfolder.
+        /// When the 'GetFullVideoMetaDataOfChannelAsync' method is called again, only 2 videos are returned.
+        /// </summary>
+        [TestMethod]
+        public void GetListOfVideosWhenAlreadyFilesInSubfolder()
+        {
+            var youtubeApi = SetUpTest(out var localLogger);
+            var victimChannel = GetVictimTestChannel();
+
+            var theList = youtubeApi.GetFullVideoMetaDataOfChannelAsync(victimChannel, 10).Result;
+            var subfolder = Path.Combine(WorkFolder, victimChannel.ChannelId);
+
+            theList.ForEach(video =>
+                            {
+                                youtubeApi.CreateVideoMetaDataFileInWorkSubFolder(video);
+                            });
+
+            var fileNames = Directory.GetFiles(subfolder);
+            File.Delete(fileNames[3]);
+            File.Delete(fileNames[7]);
+
+            theList = youtubeApi.GetFullVideoMetaDataOfChannelAsync(victimChannel, 10).Result;
+            Assert.AreEqual(theList.Count, 2);
+        }
     }
 }

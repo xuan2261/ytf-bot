@@ -56,8 +56,9 @@ namespace YoutubeApi
 
         /// <summary>
         /// This method returns a list within all meta data to videos found in the passed channel 'channel'.
-        /// With the help of the id of a found video, it is checked whether the working directory already contains files whose names contain the
+        /// With the help of the id of a found video, it is checked whether the working subfolder already contains files whose names contain the
         /// id of this found video.
+        /// Because this method accesses the subfolder in the working directory, this subfolder is created if it does not yet exist.
         /// </summary>
         /// <param name="channel">The Youtube channel.</param>
         /// <param name="maximumResult">Consider only this amount of results.</param>
@@ -66,6 +67,11 @@ namespace YoutubeApi
                                                                                       int maximumResult)
         {
             Logger.LogDebug($"Check {channel.ChannelName} with id {channel.ChannelId}");
+
+            if (!Directory.Exists(Path.Combine(this.workDir, channel.ChannelId)))
+            {
+                Directory.CreateDirectory(Path.Combine(this.workDir, channel.ChannelId));
+            }
 
             // This list contains all videos of the 'channel' including the complete 'Description'.
             var resultListOfChannelVideos = new List<VideoMetaDataFull>(maximumResult);
@@ -84,7 +90,7 @@ namespace YoutubeApi
 
                 // Check the working directory to see if it already contains one or more of the videos found in 'playlistItems'.
                 // This method only returns the videosIds that are not yet in the working directory.
-                var listOfVideoIds = GetListOfVideoIdsNotYetInWorkingDirectory(playlistItems);
+                var listOfVideoIds = GetListOfVideoIdsNotYetInWorkingDirectory(channel, playlistItems);
                 Logger.LogDebug($"In {channel.ChannelName} found {listOfVideoIds.Count} new videos.");
 
                 if (listOfVideoIds.Count > 0)
@@ -110,14 +116,15 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// This method only returns the videosIds that are not yet in the working directory.
+        /// This method only returns the videosIds that are not yet in the working subdirectory.
         /// </summary>
+        /// <param name="channel"></param>
         /// <param name="playlistItems">Items found in the playlist.</param>
         /// <returns>List of videos published since last successful check.</returns>
-        private List<string> GetListOfVideoIdsNotYetInWorkingDirectory(List<PlaylistItem> playlistItems)
+        private List<string> GetListOfVideoIdsNotYetInWorkingDirectory(Channel channel, List<PlaylistItem> playlistItems)
         {
             var listOfVideoIds = playlistItems.Select(item => item.Snippet.ResourceId.VideoId).ToList();
-            return FileHandling.ReduceListOfIds(listOfVideoIds, this.workDir, VideoMetaDataFull.VideoFileSearchPattern);
+            return FileHandling.ReduceListOfIds(listOfVideoIds, Path.Combine(this.workDir, channel.ChannelId), VideoMetaDataFull.VideoFileSearchPattern);
         }
 
         /// <summary>
@@ -210,9 +217,9 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// Creates a video meta data file in the working directory. File name based on the Id of the video.
+        /// Creates a video meta data file in the channel subfolder of the working directory. File name based on the Id of the video.
         /// </summary>
-        public void CreateVideoMetaDataFileInWorkingDirectory(VideoMetaDataFull videoMetaData)
+        public void CreateVideoMetaDataFileInWorkSubFolder(VideoMetaDataFull videoMetaData)
         {
             var fullPathYoutubeVideoMetaFile = VideoMetaDataFull.CreateFileNameWithSubFolder(videoMetaData, this.workDir);
             File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(videoMetaData));

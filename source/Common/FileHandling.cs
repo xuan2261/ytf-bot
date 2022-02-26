@@ -3,7 +3,7 @@
     public static class FileHandling
     {
         /// <summary>
-        /// Method finds thevideo id files that are not yet processed.
+        /// Method finds the video id files that are not yet processed.
         /// Files with a freely definable content exist in the current directory. The file names of these files end with
         /// "searchPattern". It is assumed that these files are somehow processed and the already processed files are located as a
         /// string in the text file "pathToFileOfProcessedVideoIds". This method creates a list of file names that have not yet been
@@ -12,10 +12,13 @@
         /// <returns>Returns a list within the full paths to youtube meta files (videoId files) that are not processed yet.</returns>
         public static List<string> FindNotYetProcessedVideoIdFiles(string pathToFileOfProcessedVideoIds, string folderToSearchIn, string searchPattern)
         {
-            var videoIdFiles = Directory.EnumerateFiles(folderToSearchIn)
-                                                     .Where(file => file.EndsWith(searchPattern))
-                                                     .ToList();
+            var videoIdFiles = FindVideoIdFilesInSubfolders(folderToSearchIn, searchPattern);
             var notYetProcessedFileNames = new List<string>();
+
+            if (videoIdFiles.Count == 0)
+            {
+                return notYetProcessedFileNames;
+            }
 
             if (File.Exists(pathToFileOfProcessedVideoIds))
             {
@@ -39,13 +42,34 @@
         }
 
         /// <summary>
+        /// Returns a list of videoId files containing in the subfolders located inside folderToSearchIn.
+        /// </summary>
+        /// <param name="folderToSearchIn"></param>
+        /// <param name="searchPattern"></param>
+        /// <returns></returns>
+        public static List<string> FindVideoIdFilesInSubfolders(string folderToSearchIn, string searchPattern)
+        {
+            var subFolders = Directory.EnumerateDirectories(folderToSearchIn);
+            var videoIdFiles = new List<string>();
+            foreach (var subFolder in subFolders)
+            {
+                videoIdFiles.AddRange(Directory.EnumerateFiles(Path.Combine(folderToSearchIn, subFolder))
+                                               .Where(file => file.EndsWith(searchPattern)));
+            }
+            return videoIdFiles;
+        }
+
+        /// <summary>
         /// This method writes the list of the names of the files that have been processed to the log file pathToListOfProcessedFiles.
         /// </summary>
         /// <param name="pathToListOfProcessedFiles"></param>
         /// <param name="newProcessedFiles"></param>
         public static void WriteProcessedFileNamesIntoListOfProcessedFiles(string pathToListOfProcessedFiles, List<string> newProcessedFiles)
         {
-            File.AppendAllLines(pathToListOfProcessedFiles, newProcessedFiles);
+            if (newProcessedFiles.Count > 0)
+            {
+                File.AppendAllLines(pathToListOfProcessedFiles, newProcessedFiles);
+            }
         }
 
         /// <summary>
@@ -87,7 +111,7 @@
         }
 
         /// <summary>
-        /// Returns a reduced string list obtained from 'listOfIds'.
+        /// Returns a reduced string list obtained from 'listOfIds'. Mainly used by YoutubeApi.cs to check if new videos have been published.
         /// This method searches 'folderToSearchIn' for files whose names match 'searchPattern'. It then checks whether the names of the files
         /// found contain strings from the 'listOfIds' list.Finally, only strings are returned that are not yet contained in a file name that matches
         /// the search pattern.

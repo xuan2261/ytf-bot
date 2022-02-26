@@ -22,6 +22,8 @@ namespace YoutubeApi
         private int MinTimeoutForApiCallInSeconds => 5;
 
         /// <summary>
+        /// Ctor.
+        /// Creates the working directory if it does not already exist.
         /// </summary>
         /// <param name="youtubeApi"></param>
         /// <param name="workDir"></param>
@@ -81,7 +83,7 @@ namespace YoutubeApi
                                            {
                                                listOfVideoMetaOfAllChannels.ForEach(videoMetaData =>
                                                                                     {
-                                                                                        this.youtubeApi.CreateVideoMetaDataFileInWorkingDirectory(
+                                                                                        this.youtubeApi.CreateVideoMetaDataFileInWorkSubFolder(
                                                                                             videoMetaData);
                                                                                     });
                                                

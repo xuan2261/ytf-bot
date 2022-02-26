@@ -115,12 +115,16 @@ namespace Common
         /// <returns></returns>
         public bool IsGerman()
         {
-            var result = false;
             var videoDescription = Base64Decode(this.DescriptionBase64);
-            
-            // TODO etwas fehlt ja wohl noch!!!
 
-            return result;
+            if (videoDescription.Contains("german") |
+                videoDescription.Contains("austria") |
+                videoDescription.Contains("switzerland") |
+                videoDescription.Contains("swiss"))
+            {
+                return true;
+            }
+            return false;
         }
 
         public static string GetChannelSubDir(string workDir, string channelId)
