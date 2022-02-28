@@ -90,7 +90,7 @@ namespace YoutubeApi
 
                 // Check the working directory to see if it already contains one or more of the videos found in 'playlistItems'.
                 // This method only returns the videosIds that are not yet in the working directory.
-                var listOfVideoIds = GetListOfVideoIdsNotYetInWorkingDirectory(channel, playlistItems);
+                var listOfVideoIds = GetListOfVideoIdsNotYetInWorkSubDir(channel, playlistItems);
                 Logger.LogDebug($"In {channel.ChannelName} found {listOfVideoIds.Count} new videos.");
 
                 if (listOfVideoIds.Count > 0)
@@ -121,7 +121,7 @@ namespace YoutubeApi
         /// <param name="channel"></param>
         /// <param name="playlistItems">Items found in the playlist.</param>
         /// <returns>List of videos published since last successful check.</returns>
-        private List<string> GetListOfVideoIdsNotYetInWorkingDirectory(Channel channel, List<PlaylistItem> playlistItems)
+        private List<string> GetListOfVideoIdsNotYetInWorkSubDir(Channel channel, List<PlaylistItem> playlistItems)
         {
             var listOfVideoIds = playlistItems.Select(item => item.Snippet.ResourceId.VideoId).ToList();
             return FileHandling.ReduceListOfIds(listOfVideoIds, Path.Combine(this.workDir, channel.ChannelId), VideoMetaDataFull.VideoFileSearchPattern);

@@ -12,7 +12,8 @@ var serviceWorkDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Servic
 
 myLogger.LogInfo("Start Telegram Worker");
 var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, VideoMetaDataFull.VideoFileSearchPattern, serviceWorkDir);
-_ = telegramManager.StartSomeBotToHaufenChat();
+_ = telegramManager.StartBlackMetaloidToBmChat();
+_ = telegramManager.StartGermanBlackMetaloidToGbmChat();
 
 myLogger.LogInfo("Start Youtube Worker");
 var youtubeApi = new YoutubeApi.YoutubeApi(completeServiceConfig.YoutubeConfig.ApiKey, serviceWorkDir);
@@ -29,7 +30,7 @@ while (Console.ReadKey().Key != ConsoleKey.E)
     Console.WriteLine("Hit e to exit");
 }
 
-telegramManager.StopSomeBotToHaufenChat();
+telegramManager.StopAllWorker();
 myYoutubeManager.StopYoutubeWorker();
 
 Console.WriteLine("All workers stopped");

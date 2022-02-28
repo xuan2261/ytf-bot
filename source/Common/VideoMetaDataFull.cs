@@ -117,9 +117,12 @@ namespace Common
         {
             var videoDescription = Base64Decode(this.DescriptionBase64);
 
-            if (videoDescription.Contains("german") |
+            if (videoDescription.Contains("German") |
+                videoDescription.Contains("german") |
+                videoDescription.Contains("Austria") |
                 videoDescription.Contains("austria") |
-                videoDescription.Contains("switzerland") |
+                videoDescription.Contains("Switzerland") |
+                videoDescription.Contains("Swiss") |
                 videoDescription.Contains("swiss"))
             {
                 return true;

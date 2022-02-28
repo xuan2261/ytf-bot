@@ -4,8 +4,8 @@
     {
         /// <summary>
         /// Method finds the video id files that are not yet processed.
-        /// Files with a freely definable content exist in the current directory. The file names of these files end with
-        /// "searchPattern". It is assumed that these files are somehow processed and the already processed files are located as a
+        /// Files with a freely definable content exist in the subfolders of the current directory. The file names of these files end with
+        /// "searchPattern". It is assumed that these files are somehow processed and the already processed files names are located as a
         /// string in the text file "pathToFileOfProcessedVideoIds". This method creates a list of file names that have not yet been
         /// processed and are therefore not in the file "pathToFileOfProcessedVideoIds".
         /// </summary>

@@ -6,7 +6,7 @@ namespace TelegramApi
     public class TelegramManager
     {
         private readonly Logger logger;
-        private bool someBotToHaufenChatWorkerShallRun;
+        private bool someBotToHaufenChatWorkerShallRun, blackmetaloidRun, blackMetaloidRunGerman;
 
         private readonly TelegramBot irgendeinBot, unh317_01Bot, blackmetaloidBot;
         private readonly Chat haufenChat, gBmChat, bMChat, debugChannel;
@@ -64,9 +64,11 @@ namespace TelegramApi
         /// This method stops the internal worker.
         /// No channel will be read after that and the object has to be destroyed.
         /// </summary>
-        public void StopSomeBotToHaufenChat()
+        public void StopAllWorker()
         {
             this.someBotToHaufenChatWorkerShallRun = false;
+            this.blackMetaloidRunGerman = false;
+            this.blackmetaloidRun = false;
             this.logger.LogWarning("All telegram bots are in standby now.");
         }
 
@@ -83,7 +85,30 @@ namespace TelegramApi
                            {
                                while (this.someBotToHaufenChatWorkerShallRun)
                                {
-                                   if (!SomeBotToHaufenChatTaskAsync().Wait(TimeSpan.FromSeconds(45)))
+                                   if (!SendVideoDataIntoChatAsync(this.irgendeinBotListOfProcessedFiles,
+                                                                   400,
+                                                                   this.irgendeinBot,
+                                                                   this.haufenChat).Wait(TimeSpan.FromSeconds(45)))
+                                   {
+                                       this.logger.LogWarning("TimeOut in IrgendeinBotTask async. Check it.");
+                                       _ = SendDebugMessageAsync("TimeOut in IrgendeinBotTask async. Check it.");
+                                   }
+
+                                   Thread.Sleep(GetSleepTime());
+                               }
+                           });
+        }
+        public async Task StartBlackMetaloidToBmChat()
+        {
+            this.blackmetaloidRun = true;
+            await Task.Run(() =>
+                           {
+                               while (this.blackmetaloidRun)
+                               {
+                                   if (!SendVideoDataIntoChatAsync(this.blackmetaloidBotListOfProcessedFiles,
+                                                                   400,
+                                                                   this.blackmetaloidBot,
+                                                                   this.bMChat).Wait(TimeSpan.FromSeconds(45)))
                                    {
                                        this.logger.LogWarning("TimeOut in IrgendeinBotTask async. Check it.");
                                        _ = SendDebugMessageAsync("TimeOut in IrgendeinBotTask async. Check it.");
@@ -94,6 +119,30 @@ namespace TelegramApi
                            });
         }
 
+        public async Task StartGermanBlackMetaloidToGbmChat()
+        {
+            this.blackMetaloidRunGerman = true;
+            await Task.Run(() =>
+                           {
+                               while (this.blackMetaloidRunGerman)
+                               {
+                                   if (!SendVideoDataIntoChatAsync(this.blackmetaloidBotListOfProcessedFilesGerman,
+                                                                   400,
+                                                                   this.blackmetaloidBot,
+                                                                   this.gBmChat,
+                                                                   true).Wait(TimeSpan.FromSeconds(45)))
+                                   {
+                                       this.logger.LogWarning("TimeOut in IrgendeinBotTask async. Check it.");
+                                       _ = SendDebugMessageAsync("TimeOut in IrgendeinBotTask async. Check it.");
+                                   }
+
+                                   Thread.Sleep(GetSleepTime());
+                               }
+                           });
+        }
+
+
+
         /// <summary>
         /// This method enforces a sleep time for worker threads depending on the current time.
         /// </summary>
@@ -103,181 +152,53 @@ namespace TelegramApi
             return TimeSpan.FromMinutes(1);
         }
 
+
         /// <summary>
-        /// Method executes a task by using the bot irgendeinBot.
+        /// Method executes a task and send messages into theChat by using theBot.
         /// This task has 4 subtasks:
         /// 1 Find not yet processed youtube meta files
-        /// 2 Send not yet processed files in the chat haufenChat
+        /// 2 Send not yet processed files in the chat theChat
         /// 3 Update file with processed files
         /// 4 Trim the file within the processed file names
         /// </summary>
-        /// <returns>Task</returns>
-        public async Task BlackmetaloidBotTaskAsync()
-        {
-            try
-            {
-                await Task.Run(() =>
-                               {
-                                   // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
-                                   // It is probably not necessary to secure this process with a mutex, because each bot must manage
-                                   // its own list of already processed files.
-                                   var notYetProcessed =
-                                       FileHandling.FindNotYetProcessedVideoIdFiles(this.blackmetaloidBotListOfProcessedFiles,
-                                                                                    this.WorkDir,
-                                                                                    VideoMetaDataFull.VideoFileSearchPattern);
-
-                                   if (notYetProcessed.Count > 0)
-                                   {
-                                       if (SendYoutubeMetaFileInfoToTelegramChatAsync(notYetProcessed, this.blackmetaloidBot, this.bMChat)
-                                           .Wait(TimeSpan.FromSeconds(5 + notYetProcessed.Count * 2)))
-                                       {
-                                           FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(this.blackmetaloidBotListOfProcessedFiles,
-                                                                                                        notYetProcessed);
-                                           FileHandling.TrimFileListOfProcessedFile(this.blackmetaloidBotListOfProcessedFiles, 400);
-                                       }
-                                       else
-                                       {
-                                           this.logger.LogError("Timeout in SomeBotToHaufenChatTaskAsync. Don't just stand there, kill something!");
-                                       }
-                                   }
-                               });
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError(e.Message);
-            }
-        }
-
-        public async Task GermanBlackmetaloidBotTaskAsync()
-        {
-            try
-            {
-                await Task.Run(() =>
-                {
-                    // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
-                    // It is probably not necessary to secure this process with a mutex, because each bot must manage
-                    // its own list of already processed files.
-                    var notYetProcessed =
-                        FileHandling.FindNotYetProcessedVideoIdFiles(this.blackmetaloidBotListOfProcessedFilesGerman,
-                                                                     this.WorkDir,
-                                                                     VideoMetaDataFull.VideoFileSearchPattern);
-
-                    if (notYetProcessed.Count > 0)
-                    {
-                        if (SendGermanYoutubeMetaFileInfoToTelegramChatAsync(notYetProcessed, this.blackmetaloidBot, this.haufenChat)
-                            .Wait(TimeSpan.FromSeconds(5 + notYetProcessed.Count * 2)))
-                        {
-                            FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(this.blackmetaloidBotListOfProcessedFilesGerman,
-                                                                                         notYetProcessed);
-                            FileHandling.TrimFileListOfProcessedFile(this.blackmetaloidBotListOfProcessedFilesGerman, 400);
-                        }
-                        else
-                        {
-                            this.logger.LogError("Timeout in SomeBotToHaufenChatTaskAsync. Don't just stand there, kill something!");
-                        }
-                    }
-                });
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError(e.Message);
-            }
-        }
-
-        /// <summary>
-        /// Method executes a task by using the bot irgendeinBot.
-        /// This task has 4 subtasks:
-        /// 1 Find not yet processed youtube meta files
-        /// 2 Send not yet processed files in the chat haufenChat
-        /// 3 Update file with processed files
-        /// 4 Trim the file within the processed file names
-        /// </summary>
-        /// <returns>Task</returns>
-        public async Task SomeBotToHaufenChatTaskAsync()
-        {
-            try
-            {
-                await Task.Run(() =>
-                               {
-                                   // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
-                                   // It is probably not necessary to secure this process with a mutex, because each bot must manage
-                                   // its own list of already processed files.
-                                   var notYetProcessed =
-                                       FileHandling.FindNotYetProcessedVideoIdFiles(this.irgendeinBotListOfProcessedFiles,
-                                                                                    this.WorkDir,
-                                                                                    VideoMetaDataFull.VideoFileSearchPattern);
-
-                                   if (notYetProcessed.Count > 0)
-                                   {
-                                       if (SendYoutubeMetaFileInfoToTelegramChatAsync(notYetProcessed, this.irgendeinBot, this.haufenChat)
-                                           .Wait(TimeSpan.FromSeconds(5 + notYetProcessed.Count * 2)))
-                                       {
-                                           FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(this.irgendeinBotListOfProcessedFiles,
-                                                                                                        notYetProcessed);
-                                           FileHandling.TrimFileListOfProcessedFile(this.irgendeinBotListOfProcessedFiles, 400);
-                                       }
-                                       else
-                                       {
-                                           this.logger.LogError("Timeout in SomeBotToHaufenChatTaskAsync. Don't just stand there, kill something!");
-                                       }
-                                   }
-                               });
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError(e.Message);
-            }
-        }
-
-        /// <summary>
-        /// Method publishes all entries of 'VideoMetaDataFull' that could be found in the the files in notYetProcessedFiles in
-        /// theChat via theBot.
-        /// </summary>
-        /// <param name="notYetProcessedFiles"></param>
-        /// <param name="theBot"></param>
-        /// <param name="theChat"></param>
-
+        /// <param name="pathToProcessedFiles">Path to the file that contains the names and pathes of the processed videos.</param>
+        /// <param name="sizeOfFile">Size of file in lines</param>
+        /// <param name="theBot">The bot that is used to send</param>
+        /// <param name="theChat">The chat to send in.</param>
+        /// <param name="gaymanSensitive">If true, Description is checked for gayman black metal</param>
         /// <returns></returns>
-        private async Task SendYoutubeMetaFileInfoToTelegramChatAsync(List<string> notYetProcessedFiles, TelegramBot theBot, Chat theChat)
+        public async Task SendVideoDataIntoChatAsync(string pathToProcessedFiles, 
+                                                     int sizeOfFile, 
+                                                     TelegramBot theBot, 
+                                                     Chat theChat, 
+                                                     bool gaymanSensitive = false)
         {
             try
             {
                 await Task.Run(() =>
-                {
-                    List<VideoMetaDataFull> listOfMetaVideoDate = new List<VideoMetaDataFull>();
-                    notYetProcessedFiles.ForEach(file =>
-                    {
-                        if (File.Exists(file))
-                        {
-                            listOfMetaVideoDate.Add(VideoMetaDataFull.DeserializeFromFile(file));
-                        }
-                        else
-                        {
-                            this.logger.LogError($"File {file} not found");
-                        }
-                    });
+                               {
+                                   // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
+                                   // It is probably not necessary to secure this process with a mutex, because each bot must manage
+                                   // its own list of already processed files.
+                                   var notYetProcessed =
+                                       FileHandling.FindNotYetProcessedVideoIdFiles(pathToProcessedFiles,
+                                                                                    this.WorkDir,
+                                                                                    VideoMetaDataFull.VideoFileSearchPattern);
 
-                    if (listOfMetaVideoDate.Count > 0)
-                    {
-                        // Minimum timeout plus the amount of videos found in file newNotProcessedFile
-                        var timeOut = 5 + listOfMetaVideoDate.Count * 2;
-                        this.logger.LogDebug(
-                            $"Bot {theBot.Name} start sending to {theChat.ChatName} with id {theChat.ChatId}. " +
-                            $"Timeout {timeOut} seconds. Videos {listOfMetaVideoDate.Count}");
-
-                        var tasks = listOfMetaVideoDate.Select(videoMetaDataFull =>
-                                                                   theBot.SendToChatAsync(
-                                                                       theChat,
-                                                                       videoMetaDataFull.GetReadableDescription(),
-                                                                       timeOut)).ToArray();
-                        Task.WaitAll(tasks);
-                        this.logger.LogInfo($"Bot {theBot.Name} sent to chat {theChat.ChatName} {listOfMetaVideoDate.Count} videos.");
-                    }
-                    else
-                    {
-                        this.logger.LogInfo($"Nothing to do for {theBot.Name} in {theChat.ChatName}");
-                    }
-                });
+                                   if (notYetProcessed.Count > 0)
+                                   {
+                                       if (SendVideoMetaDataToChatAsync(notYetProcessed, theBot, theChat, gaymanSensitive)
+                                           .Wait(TimeSpan.FromSeconds(5 + notYetProcessed.Count * 2)))
+                                       {
+                                           FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(pathToProcessedFiles, notYetProcessed);
+                                           FileHandling.TrimFileListOfProcessedFile(pathToProcessedFiles, sizeOfFile);
+                                       }
+                                       else
+                                       {
+                                           this.logger.LogError("Timeout in SomeBotToHaufenChatTaskAsync. Don't just stand there, kill something!");
+                                       }
+                                   }
+                               });
             }
             catch (Exception e)
             {
@@ -294,26 +215,16 @@ namespace TelegramApi
         /// <param name="theChat"></param>
         /// <param name="gaymanSensitive"></param>
         /// <returns></returns>
-        private async Task SendGermanYoutubeMetaFileInfoToTelegramChatAsync(List<string> notYetProcessedFiles,
-                                                                            TelegramBot theBot,
-                                                                            Chat theChat)
+        private async Task SendVideoMetaDataToChatAsync(List<string> notYetProcessedFiles,
+                                                        TelegramBot theBot,
+                                                        Chat theChat,
+                                                        bool gaymanSensitive = false)
         {
             try
             {
                 await Task.Run(() =>
                                {
-                                   List<VideoMetaDataFull> listOfMetaVideoDate = new List<VideoMetaDataFull>();
-                                   notYetProcessedFiles.ForEach(file =>
-                                                                {
-                                                                    if (File.Exists(file))
-                                                                    {
-                                                                        listOfMetaVideoDate.Add(VideoMetaDataFull.DeserializeFromFile(file));
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        this.logger.LogError($"File {file} not found");
-                                                                    }
-                                                                });
+                                   var listOfMetaVideoDate = DeserializeFiles(notYetProcessedFiles);
 
                                    if (listOfMetaVideoDate.Count > 0)
                                    {
@@ -326,12 +237,19 @@ namespace TelegramApi
                                        var theTasks = new List<Task>();
                                        listOfMetaVideoDate.ForEach(video =>
                                                                    {
-                                                                       if (video.IsGerman())
+                                                                       if (!gaymanSensitive)
                                                                        {
                                                                            theTasks.Add(theBot.SendToChatAsync(
                                                                                theChat,
                                                                                video.GetReadableDescription(),
                                                                                timeOut));
+                                                                       }
+                                                                       else if (video.IsGerman())
+                                                                       {
+                                                                           theTasks.Add(theBot.SendToChatAsync(
+                                                                                            theChat,
+                                                                                            video.GetReadableDescription(),
+                                                                                            timeOut));
                                                                        }
                                                                    });
 
@@ -368,6 +286,28 @@ namespace TelegramApi
             {
                 this.logger.LogError(e.Message);
             }
+        }
+
+        /// <summary>
+        /// Deserializes all files in 'notYetProcessedFiles' to a list of VideoMetaDataFull.
+        /// </summary>
+        /// <param name="notYetProcessedFiles">List of files that contain video data.</param>
+        /// <returns>The list of VideoMetaData</returns>
+        private List<VideoMetaDataFull> DeserializeFiles(List<string> notYetProcessedFiles)
+        {
+            List<VideoMetaDataFull> listOfMetaVideoDate = new List<VideoMetaDataFull>();
+            notYetProcessedFiles.ForEach(file =>
+                                         {
+                                             if (File.Exists(file))
+                                             {
+                                                 listOfMetaVideoDate.Add(VideoMetaDataFull.DeserializeFromFile(file));
+                                             }
+                                             else
+                                             {
+                                                 this.logger.LogError($"File {file} not found");
+                                             }
+                                         });
+            return listOfMetaVideoDate;
         }
     }
 }
