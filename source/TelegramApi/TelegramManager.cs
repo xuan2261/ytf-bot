@@ -17,7 +17,8 @@ namespace TelegramApi
 
         /// <summary>
         /// The WorkDir contains all the files needed for the TelegramManager:
-        /// 1.  List of files within VideoMetaDataFull per video to check which videos have been published on the channels.
+        /// 1.  Subfolders in working directory within lists of files within VideoMetaDataFull per video to check which videos
+        ///     have been published on the channels.
         /// 2.  One 'ListOfProcessedFiles' file per task and bot to check which videos from the VideoMetaDataFull files have
         /// already been processed by a bot in a specific task.
         /// </summary>
@@ -32,7 +33,6 @@ namespace TelegramApi
             {
                 Directory.CreateDirectory(workDir);
             }
-
             this.WorkDir = workDir;
 
             var unh31701Config = myConfig.Bots[0];

@@ -4,37 +4,16 @@ using System.Text.Json;
 using SimpleLogger;
 using TelegramApi;
 using YoutubeApi;
+using FacebookAutomation;
 
 namespace BotService
 {
-    public class Group
-    {
-        [JsonPropertyName("groupName")]
-        public string GroupName { get; set; }
-
-        [JsonPropertyName("groupId")]
-        public string GroupId { get; set; }
-    }
-
-    public class FaceBook
-    {
-        [JsonPropertyName("email")]
-        public string Email { get; set; }
-
-        [JsonPropertyName("pw")]
-        public string Pw { get; set; }
-
-        [JsonPropertyName("groups")]
-        public List<Group> Groups { get; set; }
-    }
-
-
     public class BotConfig
     {
-        [JsonPropertyName("faceBook")]
-        public FaceBook FaceBook { get; set; }
+        [JsonPropertyName("facebookConfig")]
+        public FacebookConfig FacebookConfig { get; set; }
 
-        [JsonPropertyName("telegram")]
+        [JsonPropertyName("telegramConfig")]
         public TelegramConfig TelegramConfig { get; set; }
 
         [JsonPropertyName("youtubeConfig")]

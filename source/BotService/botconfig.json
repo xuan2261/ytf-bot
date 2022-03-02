@@ -1,5 +1,5 @@
 {
-  "faceBook": {
+  "facebookConfig": {
     "email": "email address of account",
     "pw": "password of account",
     "groups": [
@@ -13,7 +13,7 @@
       }
     ]
   },
-  "telegram": {
+  "telegramConfig": {
     "bots": [
       {
         "botName": "name of a bot",
@@ -31,7 +31,7 @@
       }
     ]
   },
-  "youtube": {
+  "youtubeConfig": {
     "apiKey": "your api key",
     "apiKey4Testing": "api key for tests",
     "channels": [

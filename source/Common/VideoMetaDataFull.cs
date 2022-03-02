@@ -95,7 +95,7 @@ namespace Common
             var readableString = BuildYoutubeLinkToVideo() + Environment.NewLine + Environment.NewLine;
             readableString += Base64Decode(TitleBase64) + Environment.NewLine;
             readableString += PublishedAtRaw.ToString("yyyy-MM-ddTHH:mm:ssZ") + Environment.NewLine + Environment.NewLine;
-            readableString += "Original Description:" + Environment.NewLine;
+            readableString += "Original Description via " + ChannelTitle + ":" + Environment.NewLine;
             readableString += Base64Decode(this.DescriptionBase64);
             return readableString;
         }

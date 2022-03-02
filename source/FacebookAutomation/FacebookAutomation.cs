@@ -16,11 +16,19 @@ namespace FacebookAutomation
     public class FacebookAutomation : IDisposable
     {
         private readonly Logger logger;
-        public string WorkFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "facebookWorkDir");
+        
+        /// <summary>
+        /// The WorkDir contains all the files needed for the FacebookAutomation:
+        /// 1.  Subfolders in working directory within lists of files within VideoMetaDataFull per video to check which videos
+        ///     have been published on the channels.
+        /// 2.  One 'ListOfProcessedFiles' file per task to check which videos from the VideoMetaDataFull files have
+        /// already been processed by a bot in a specific task.
+        /// </summary>
+        public readonly string WorkDir;
 
         // css selector to find the cookie accept button
         private static readonly By CssSelectorCookieAccept =
-            By.CssSelector("[data-testid = 'cookie-policy-dialog-accept-button']");
+            By.CssSelector("[data-testid = 'cookie-policy-manage-dialog-accept-button']");
 
         // css selector to find the login button
         private static readonly By CssSelectorLogInButton =
@@ -53,18 +61,21 @@ namespace FacebookAutomation
         /// Ctor.
         /// Initiate the webDriver.
         /// </summary>
-        public FacebookAutomation(Logger theLogger = null)
+        public FacebookAutomation(string workDir, Logger theLogger = null)
         {
             this.logger = theLogger ?? new Logger("FacebookAutomation.log");
 
             try
             {
+                if (!Directory.Exists(workDir)) Directory.CreateDirectory(workDir);
+                this.WorkDir = workDir;
+
                 var options = new ChromeOptions();
                 options.AddArgument("--disable-notifications");
                 options.AddArgument("--window-size=1500,1200");
                 options.AddExcludedArgument("enable-logging");
 
-                this.webDriver = new ChromeDriver(WorkFolder, options);
+                this.webDriver = new ChromeDriver(AppDomain.CurrentDomain.BaseDirectory, options);
             }
             catch (Exception e)
             {

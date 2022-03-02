@@ -55,14 +55,14 @@ namespace Tests
             var telegramConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").TelegramConfig;
             var manager = new TelegramManager(telegramConfig, VideoMetaDataFull.VideoFileSearchPattern, WorkFolder);
 
-            for (int i = 0; i < 10; i++)
-            {
-                if (!manager.SomeBotToHaufenChatTaskAsync().Wait(TimeSpan.FromSeconds(10)))
-                {
-                    logger.LogWarning("There may be a problem in the telegram test. Timeout.");
-                }
-                Thread.Sleep(TimeSpan.FromSeconds(10));
-            }
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    if (!manager.SomeBotToHaufenChatTaskAsync().Wait(TimeSpan.FromSeconds(10)))
+            //    {
+            //        logger.LogWarning("There may be a problem in the telegram test. Timeout.");
+            //    }
+            //    Thread.Sleep(TimeSpan.FromSeconds(10));
+            //}
 
             Console.WriteLine();
             // This is not a unit test. Check your chat to verify if this construct did work.
