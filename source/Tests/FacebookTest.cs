@@ -27,16 +27,17 @@ namespace Tests
 
             var video = youtubeApi.GetVideoMetaData(videoId).Result;
 
-            return video.GetReadableDescription();
+            return video.GetFacebookDescription();
         }
 
         [TestMethod]
         public void SimpleLogInAndPostToGroup()
         {
+            var theMessage = GetVideoDescription();
+
             var logger = new Logger("TestFacebookLogFile.log");
             var facebook = new FbAutomation(WorkFolder, logger);
             var facebookConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").FacebookConfig;
-            var theMessage = GetVideoDescription();
 
             facebook.Login(facebookConfig.Email, facebookConfig.Pw);
             facebook.PublishTextContentInFaceBookGroup(facebookConfig.Groups[0].GroupId, theMessage);

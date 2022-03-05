@@ -83,8 +83,9 @@ namespace YoutubeApi
                                            {
                                                listOfVideoMetaOfAllChannels.ForEach(videoMetaData =>
                                                                                     {
-                                                                                        this.youtubeApi.CreateVideoMetaDataFileInWorkSubFolder(
-                                                                                            videoMetaData);
+                                                                                        VideoMetaDataFull.SerializeToFileInSubfolder(
+                                                                                            videoMetaData,
+                                                                                            this.WorkDir);
                                                                                     });
                                                
                                                // Avoid unlimited files in directories 
@@ -125,14 +126,14 @@ namespace YoutubeApi
         }
 
         /// <summary>
-        /// Clean up working directories, avoids endless amount of video files in directories. Maximum number of files has an overhang of 50%.
-        /// 50% is a sentimental value.
+        /// Clean up working directories, avoids endless amount of video files in directories. Maximum number of files has an overhang of 200%.
+        /// 200% is a sentimental value.
         /// </summary>
         /// <param name="maxResultsPerChannel">Maximum of results per channel and api list request></param>;
         /// <param name="channels">All channels to be cleaned up.</param>
         private void CleanUpWorkingDirectories(List<Channel> channels, int maxResultsPerChannel)
         {
-            var maximumNumberOfFiles = (int)(maxResultsPerChannel * 1.5);
+            var maximumNumberOfFiles = (int)(maxResultsPerChannel * 2);
             channels.ForEach(channel =>
                              {
                                  FileHandling.RollingFileUpdater(VideoMetaDataFull.GetChannelSubDir(this.WorkDir, channel.ChannelId),

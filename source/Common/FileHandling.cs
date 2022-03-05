@@ -4,11 +4,14 @@
     {
         /// <summary>
         /// Method finds the video id files that are not yet processed.
-        /// Files with a freely definable content exist in the subfolders of the current directory. The file names of these files end with
+        /// Files with a freely definable content exist in the subfolders of 'folderToSearchIn'. The file names of these files end with
         /// "searchPattern". It is assumed that these files are somehow processed and the already processed files names are located as a
         /// string in the text file "pathToFileOfProcessedVideoIds". This method creates a list of file names that have not yet been
         /// processed and are therefore not in the file "pathToFileOfProcessedVideoIds".
         /// </summary>
+        /// <param name="pathToFileOfProcessedVideoIds">This file contains the names of the processed video files.</param>
+        /// <param name="folderToSearchIn">Folder contains subfolders within video files per youtube channel</param>
+        /// <param name="searchPattern">Extension of the video files.</param>
         /// <returns>Returns a list within the full paths to youtube meta files (videoId files) that are not processed yet.</returns>
         public static List<string> FindNotYetProcessedVideoIdFiles(string pathToFileOfProcessedVideoIds, string folderToSearchIn, string searchPattern)
         {
@@ -99,14 +102,15 @@
         /// <returns></returns>
         public static void RollingFileUpdater(string folderToSearchIn, string searchPattern, int maximumFiles)
         {
-            DirectoryInfo info = new DirectoryInfo(folderToSearchIn);
-            FileInfo[] files = info.GetFiles().Where(file => file.Name.Contains(searchPattern))
-                                              .OrderBy(p => p.CreationTime)
-                                              .ToArray();
+            var files = Directory.GetFiles(folderToSearchIn).ToList();
+            var videos = VideoMetaDataFull.DeserializeFiles(files, out var notFoundFiles).OrderBy(video => video.PublishedAtRaw).ToList();
 
-            for (int i = 0; i < files.Length - maximumFiles; i++)
+            // The list 'videos' contains all videos found and is sorted by date. Starting with the oldest video. So now we throw away old videos
+            // until the number of allowed files no longer exceeds 'maximumFiles'.
+            for (int i = 0; i < videos.Count - maximumFiles; i++)
             {
-                File.Delete(files[i].FullName);
+                var fileNameToDelete = files.First(item => item.Contains(videos[i].Id));
+                File.Delete(fileNameToDelete);
             }
         }
 

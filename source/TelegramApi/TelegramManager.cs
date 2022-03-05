@@ -98,6 +98,7 @@ namespace TelegramApi
                                }
                            });
         }
+
         public async Task StartBlackMetaloidToBmChat()
         {
             this.blackmetaloidRun = true;
@@ -110,8 +111,8 @@ namespace TelegramApi
                                                                    this.blackmetaloidBot,
                                                                    this.bMChat).Wait(TimeSpan.FromSeconds(45)))
                                    {
-                                       this.logger.LogWarning("TimeOut in IrgendeinBotTask async. Check it.");
-                                       _ = SendDebugMessageAsync("TimeOut in IrgendeinBotTask async. Check it.");
+                                       this.logger.LogWarning("TimeOut in BlackMetaloid async. Check it.");
+                                       _ = SendDebugMessageAsync("TimeOut in BlackMetaloid async. Check it.");
                                    }
 
                                    Thread.Sleep(GetSleepTime());
@@ -132,8 +133,8 @@ namespace TelegramApi
                                                                    this.gBmChat,
                                                                    true).Wait(TimeSpan.FromSeconds(45)))
                                    {
-                                       this.logger.LogWarning("TimeOut in IrgendeinBotTask async. Check it.");
-                                       _ = SendDebugMessageAsync("TimeOut in IrgendeinBotTask async. Check it.");
+                                       this.logger.LogWarning("TimeOut in GermanBlackMetaloid async. Check it.");
+                                       _ = SendDebugMessageAsync("TimeOut in GermanBlackMetaloid async. Check it.");
                                    }
 
                                    Thread.Sleep(GetSleepTime());
@@ -167,10 +168,10 @@ namespace TelegramApi
         /// <param name="theChat">The chat to send in.</param>
         /// <param name="gaymanSensitive">If true, Description is checked for gayman black metal</param>
         /// <returns></returns>
-        public async Task SendVideoDataIntoChatAsync(string pathToProcessedFiles, 
-                                                     int sizeOfFile, 
-                                                     TelegramBot theBot, 
-                                                     Chat theChat, 
+        public async Task SendVideoDataIntoChatAsync(string pathToProcessedFiles,
+                                                     int sizeOfFile,
+                                                     TelegramBot theBot,
+                                                     Chat theChat,
                                                      bool gaymanSensitive = false)
         {
             try
@@ -224,7 +225,8 @@ namespace TelegramApi
             {
                 await Task.Run(() =>
                                {
-                                   var listOfMetaVideoDate = DeserializeFiles(notYetProcessedFiles);
+                                   var listOfMetaVideoDate = VideoMetaDataFull.DeserializeFiles(notYetProcessedFiles, out var filesNotFound);
+                                   filesNotFound.ForEach(file => this.logger.LogWarning($"{file} not found"));
 
                                    if (listOfMetaVideoDate.Count > 0)
                                    {
@@ -286,28 +288,6 @@ namespace TelegramApi
             {
                 this.logger.LogError(e.Message);
             }
-        }
-
-        /// <summary>
-        /// Deserializes all files in 'notYetProcessedFiles' to a list of VideoMetaDataFull.
-        /// </summary>
-        /// <param name="notYetProcessedFiles">List of files that contain video data.</param>
-        /// <returns>The list of VideoMetaData</returns>
-        private List<VideoMetaDataFull> DeserializeFiles(List<string> notYetProcessedFiles)
-        {
-            List<VideoMetaDataFull> listOfMetaVideoDate = new List<VideoMetaDataFull>();
-            notYetProcessedFiles.ForEach(file =>
-                                         {
-                                             if (File.Exists(file))
-                                             {
-                                                 listOfMetaVideoDate.Add(VideoMetaDataFull.DeserializeFromFile(file));
-                                             }
-                                             else
-                                             {
-                                                 this.logger.LogError($"File {file} not found");
-                                             }
-                                         });
-            return listOfMetaVideoDate;
         }
     }
 }

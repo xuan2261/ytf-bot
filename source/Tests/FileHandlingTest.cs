@@ -38,18 +38,81 @@ namespace Tests
             }
         }
 
+        /// <summary>
+        /// Creates amount of video files in test subfolders.
+        /// The time stamp in the video files is created as follows:
+        /// i:=0 -> UtcNow
+        /// i:=1 -> Utc.Now - 1 minute
+        /// i:=t -> Utc.Now - t seconds
+        ///
+        /// The bigger 't' resp. 'i' the older the video.
+        /// </summary>
+        /// <param name="amountOfFiles">Isch klar oder.</param>
+        /// <param name="subDirRespChannelId">Subdirectory</param>
+        public static void CreateVideoMetaFiles(int amountOfFiles, string subDirRespChannelId, string workingFolder)
+        {
+            const string NotRelevant = "not relevant for Test";
+            var videoMetaData = new VideoMetaDataFull
+                                {
+                                    ChannelId = subDirRespChannelId,
+                                    ChannelTitle = NotRelevant,
+                                    Id = "ytThing",
+                                    DescriptionBase64 = NotRelevant,
+                                    Title = NotRelevant,
+                                    TitleBase64 = NotRelevant
+                                };
+
+            for (var i = 0; i < amountOfFiles; i++)
+            {
+                videoMetaData.PublishedAtRaw = DateTime.UtcNow - TimeSpan.FromMinutes(i);
+                videoMetaData.Id = MakeVideoId(i);
+                VideoMetaDataFull.SerializeToFileInSubfolder(videoMetaData, workingFolder);
+            }
+        }
+
+        /// <summary>
+        /// Method create a list of video ids.
+        /// Ex.: amountOfIds = 3
+        /// - ytThing_00.video
+        /// - ytThing_01.video
+        /// - ytThing_02.video
+        /// </summary>
+        /// <param name="amountOfIds">Count of Ids To be created</param>
+        public static List<string> CreateListOfIds(int amountOfIds)
+        {
+            var listOfIds = new List<string>();
+            for (var i = 0; i < amountOfIds; i++)
+            {
+                listOfIds.Add(MakeVideoId(i));
+            }
+
+            return listOfIds;
+        }
+
+        /// <summary>
+        /// Creates a video id. In this class video ids look like:
+        /// - ytThing_00.video
+        /// - ytThing_01.video
+        /// </summary>
+        /// <param name="number">numerator</param>
+        /// <returns></returns>
+        public static string MakeVideoId(int number)
+        {
+            return $"ytThing_{number:D2}";
+        }
+
         [TestMethod]
         public void TestTrimFile()
         {
             SetupTest();
 
-            var iBimsATestFile = "testFile.txt";
-            for (int i = 0; i < 56; i++)
+            const string BimsATestFile = "testFile.txt";
+            for (var i = 0; i < 56; i++)
             {
-                File.AppendAllText(iBimsATestFile, $"TestEntry {i:D2} {Environment.NewLine}");
+                File.AppendAllText(BimsATestFile, $"TestEntry {i:D2} {Environment.NewLine}");
             }
-            FileHandling.TrimFileListOfProcessedFile(iBimsATestFile, 54);
-            Assert.AreEqual(File.ReadAllLines(iBimsATestFile).Length, 54);
+            FileHandling.TrimFileListOfProcessedFile(BimsATestFile, 54);
+            Assert.AreEqual(File.ReadAllLines(BimsATestFile).Length, 54);
         }
 
         /// <summary>
@@ -59,27 +122,25 @@ namespace Tests
         public void TestRollingFileUpdater()
         {
             SetupTest();
+            var mySubDir = "subDir_RollingFileTester";
+            var subDirFullPath = Path.Combine(WorkFolder, mySubDir);
+            CreateVideoMetaFiles(15, mySubDir, WorkFolder);
 
-            // Create 15 files
-            for (int i = 0; i < 15; i++)
-            {
-                File.AppendAllText(Path.Combine(WorkFolder, $"fileUpdater_{i:D2}.txt"), $"File content {i:D2}");
-            }
-            
-            FileHandling.RollingFileUpdater(WorkFolder, "fileUpdater", 10);
-            var files = Directory.EnumerateFiles(WorkFolder)
-                                 .Where(file => file.Contains("fileUpdater"))
+            FileHandling.RollingFileUpdater(subDirFullPath, VideoMetaDataFull.VideoFileSearchPattern, 10);
+            var files = Directory.EnumerateFiles(subDirFullPath)
+                                 .Where(file => file.Contains(VideoMetaDataFull.VideoFileSearchPattern))
                                  .ToList();
             Assert.IsTrue(files.Count == 10);
-            FileHandling.RollingFileUpdater(WorkFolder, "fileUpdater", 2);
-            files = Directory.EnumerateFiles(WorkFolder)
-                             .Where(file => file.Contains("fileUpdater"))
+
+            FileHandling.RollingFileUpdater(subDirFullPath, VideoMetaDataFull.VideoFileSearchPattern, 2);
+            files = Directory.EnumerateFiles(subDirFullPath)
+                             .Where(file => file.Contains(VideoMetaDataFull.VideoFileSearchPattern))
                              .ToList();
             Assert.IsTrue(files.Count == 2);
 
-            FileHandling.RollingFileUpdater(WorkFolder, "fileUpdater", 0);
-            files = Directory.EnumerateFiles(WorkFolder)
-                             .Where(file => file.Contains("fileUpdater"))
+            FileHandling.RollingFileUpdater(subDirFullPath, VideoMetaDataFull.VideoFileSearchPattern, 0);
+            files = Directory.EnumerateFiles(subDirFullPath)
+                             .Where(file => file.Contains(VideoMetaDataFull.VideoFileSearchPattern))
                              .ToList();
             Assert.IsTrue(files.Count == 0);
         }
@@ -93,18 +154,18 @@ namespace Tests
         {
             SetupTest();
             var mySubDir = "theSubDir";
-            CreateSubDirWithFiles(mySubDir, new List<string> { "11", "12", "13" });
+            CreateVideoMetaFiles(3, mySubDir, WorkFolder);
 
-            var alreadyProcessed = Path.Combine(WorkFolder, mySubDir, "11.video") + Environment.NewLine + Path.Combine(WorkFolder, mySubDir, "12.video");
+            var alreadyProcessed = Path.Combine(WorkFolder, mySubDir, $"{MakeVideoId(0)}.video") + Environment.NewLine;
+            alreadyProcessed += Path.Combine(WorkFolder, mySubDir, $"{MakeVideoId(1)}.video") +Environment.NewLine;
             var fileName = Path.Combine(WorkFolder, "listOfProcessedFiles.list");
             File.WriteAllText(fileName, alreadyProcessed);
 
-           
             var theList = FileHandling.FindNotYetProcessedVideoIdFiles(fileName,
                                                                        WorkFolder,
                                                                        VideoMetaDataFull.VideoFileSearchPattern);
             Assert.AreEqual(theList.Count, 1);
-            Assert.IsTrue(theList[0].Contains("13.video"));
+            Assert.IsTrue(theList[0].Contains("02.video"));
         }
 
         /// <summary>
@@ -116,20 +177,12 @@ namespace Tests
         {
             SetupTest();
             var mySubDir = "theSubDir";
-            List<string> myListOfFiles = new List<string>(500);
-            var guidOfFirst = Guid.NewGuid().ToString();
-            myListOfFiles.Add(guidOfFirst);
-            for (int i = 1; i < 500; i++)
-            {
-                myListOfFiles.Add(Guid.NewGuid().ToString());
-            }
-            CreateSubDirWithFiles(mySubDir, myListOfFiles);
+            var myListOfFiles = CreateListOfIds(500);
+            CreateVideoMetaFiles(500, mySubDir, WorkFolder);
 
-
-            var alreadyProcessed = Path.Combine(WorkFolder, mySubDir, $"{guidOfFirst}.video") + Environment.NewLine;
+            var alreadyProcessed = Path.Combine(WorkFolder, mySubDir, $"{MakeVideoId(0)}.video") + Environment.NewLine;
             var fileName = Path.Combine(WorkFolder, "listOfProcessedFiles.list");
             File.WriteAllText(fileName, alreadyProcessed);
-
 
             var theList = FileHandling.FindNotYetProcessedVideoIdFiles(fileName,
                                                                        WorkFolder,
@@ -144,14 +197,15 @@ namespace Tests
         public void TestNotYetProcessedFilesIfThereIsNoList()
         {
             SetupTest();
-            CreateSubDirWithFiles("theSubDir", new List<string> { "11", "12", "13" });
+            CreateVideoMetaFiles(3, "theSubDir1", WorkFolder);
 
             var fileName = Path.Combine(WorkFolder, "listOfProcessedFiles.list");
             var theList = FileHandling.FindNotYetProcessedVideoIdFiles(fileName,
                                                                        WorkFolder,
                                                                        VideoMetaDataFull.VideoFileSearchPattern);
-
             Assert.AreEqual(theList.Count, 0);
+            var lineCount = File.ReadLines(fileName).Count();
+            Assert.AreEqual(lineCount,3);
         }
 
         /// <summary>
@@ -161,17 +215,17 @@ namespace Tests
         public void TestGetIdsOfFilesNotYetIncludedInFolder()
         {
             SetupTest();
-            var myListOfIds = new List<string> {"11", "12", "13" };
             var mySubDir = "theSubDir";
-            CreateSubDirWithFiles(mySubDir, myListOfIds);
+            CreateVideoMetaFiles(3, mySubDir, WorkFolder);
+            var myListOfIds = CreateListOfIds(3);
 
             var workSubDir = Path.Combine(WorkFolder, mySubDir);
             var newList = FileHandling.ReduceListOfIds(myListOfIds, workSubDir, VideoMetaDataFull.VideoFileSearchPattern);
             Assert.AreEqual(newList.Count, 0);
 
             // myListOfIds contains two ids that are not yet as a file in the folder
-            myListOfIds.Add("14");
-            myListOfIds.Add("15");
+            myListOfIds.Add(MakeVideoId(12));
+            myListOfIds.Add(MakeVideoId(13));
             newList = FileHandling.ReduceListOfIds(myListOfIds, workSubDir, VideoMetaDataFull.VideoFileSearchPattern);
             Assert.AreEqual(newList.Count, 2);
 
@@ -188,25 +242,11 @@ namespace Tests
         public void FindVideoIdFilesInSubfoldersTest()
         {
             SetupTest();
-            CreateSubDirWithFiles("theSubDir1", new List<string> { "11", "12", "13" });
-            CreateSubDirWithFiles("theSubDir2", new List<string> { "14", "15", "16" });
+            CreateVideoMetaFiles(3, "theSubDir1", WorkFolder);
+            CreateVideoMetaFiles(3, "theSubDir2", WorkFolder);
 
             var theList = FileHandling.FindVideoIdFilesInSubfolders(WorkFolder, VideoMetaDataFull.VideoFileSearchPattern);
             Assert.AreEqual(theList.Count, 6);
-        }
-
-        /// <summary>
-        /// Creates a subdir within the files inside this list of filenames. File extension is VideoMetaDataFull.VideoFileSearchPattern.
-        /// </summary>
-        /// <param name="subDir"></param>
-        /// <param name="filesToCreate"></param>
-        private void CreateSubDirWithFiles(string subDir, List<string> filesToCreate)
-        {
-            Directory.CreateDirectory(Path.Combine(WorkFolder, subDir));
-            filesToCreate.ForEach(id =>
-                                  {
-                                      File.WriteAllText(Path.Combine(WorkFolder, subDir, $"{id}.{VideoMetaDataFull.VideoFileSearchPattern}"), $"Content egal {id}");
-                                  });
         }
     }
 }

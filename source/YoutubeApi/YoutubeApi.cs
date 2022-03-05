@@ -124,7 +124,9 @@ namespace YoutubeApi
         private List<string> GetListOfVideoIdsNotYetInWorkSubDir(Channel channel, List<PlaylistItem> playlistItems)
         {
             var listOfVideoIds = playlistItems.Select(item => item.Snippet.ResourceId.VideoId).ToList();
-            return FileHandling.ReduceListOfIds(listOfVideoIds, Path.Combine(this.workDir, channel.ChannelId), VideoMetaDataFull.VideoFileSearchPattern);
+            return FileHandling.ReduceListOfIds(listOfVideoIds, 
+                                                Path.Combine(this.workDir, channel.ChannelId), 
+                                                VideoMetaDataFull.VideoFileSearchPattern);
         }
 
         /// <summary>
@@ -214,15 +216,6 @@ namespace YoutubeApi
                            });
 
             return completeVideoList;
-        }
-
-        /// <summary>
-        /// Creates a video meta data file in the channel subfolder of the working directory. File name based on the Id of the video.
-        /// </summary>
-        public void CreateVideoMetaDataFileInWorkSubFolder(VideoMetaDataFull videoMetaData)
-        {
-            var fullPathYoutubeVideoMetaFile = VideoMetaDataFull.CreateFileNameWithSubFolder(videoMetaData, this.workDir);
-            File.WriteAllText(fullPathYoutubeVideoMetaFile, JsonSerializer.Serialize(videoMetaData));
         }
 
         /// <summary>

@@ -7,6 +7,7 @@ using System.Threading;
 using BotService;
 using Common;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenQA.Selenium.DevTools.V85.Page;
 using SimpleLogger;
 using YoutubeApi;
 
@@ -191,21 +192,18 @@ namespace Tests
             var ytManager = new YtManager(youtubeApi, WorkFolder);
             ytManager.CheckAndCreateChannelSubDirectories(channelList);
 
-            for (int i = 0; i < 10; i++)
-            {
-                File.WriteAllText(Path.Combine(VideoMetaDataFull.GetChannelSubDir(WorkFolder, theTestChannel.ChannelId), $"{i:D2}.video"), $"Irgenebbes {i:D2}");
-                File.WriteAllText(Path.Combine(VideoMetaDataFull.GetChannelSubDir(WorkFolder, secondChannel.ChannelId), $"{i:D2}.video"), $"Irgenebbes {i:D2}");
-            }
+            FileHandlingTest.CreateVideoMetaFiles(10, theTestChannel.ChannelId, WorkFolder);
+            FileHandlingTest.CreateVideoMetaFiles(10, secondChannel.ChannelId, WorkFolder);
 
             // Actual test. Each channel directory should now contain 10 dummy *.video files. The worker should fetch 2 real videos per channel
             // with the given parameters and then clean up the channel directories. Cleaning up means that each channel directory contains
             // only 150% of the number of videos fetched. Each channel directory may therefore contain 3 files. 
             var ddd = ytManager.StartYoutubeWorker(channelList, 2, MyLocalCallback);
             localLogger.LogDebug("Just started Youtube Worker. Now wait 10 Seconds.");
-            ddd.Wait(TimeSpan.FromSeconds(10));
+            ddd.Wait(TimeSpan.FromSeconds(7));
             localLogger.LogDebug("Stopped Youtube Worker and wait another 10 Seconds.");
             ytManager.StopYoutubeWorker();
-            ddd.Wait(TimeSpan.FromSeconds(10));
+            ddd.Wait(TimeSpan.FromSeconds(7));
             localLogger.LogDebug("Done very well. If theres no exception you're good.");
 
             var folder1 = VideoMetaDataFull.GetChannelSubDir(WorkFolder, theTestChannel.ChannelId);
@@ -229,7 +227,7 @@ namespace Tests
 
             theList.ForEach(video =>
                             {
-                                youtubeApi.CreateVideoMetaDataFileInWorkSubFolder(video);
+                                VideoMetaDataFull.SerializeToFileInSubfolder(video, WorkFolder);
                             });
 
             var fileNames = Directory.GetFiles(subfolder);

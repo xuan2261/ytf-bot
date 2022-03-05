@@ -4,6 +4,7 @@ using System.Linq;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Interactions;
+using OpenQA.Selenium.Support.Extensions;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 using SimpleLogger;
@@ -242,6 +243,34 @@ namespace FacebookAutomation
         {
             this.webDriver.Close();
             this.webDriver.Quit();
+        }
+
+        /// <summary>
+        /// Not yet in use, but it works.
+        /// Replace content of a span.
+        /// </summary>
+        /// <param name="driver"></param>
+        /// <param name="content"></param>
+        /// <param name="newContent"></param>
+        /// <param name="timeOut"></param>
+        /// <exception cref="NoSuchElementException"></exception>
+        private void FindSpanAndReplaceContent(IWebDriver driver, string content, string newContent, int timeOut = 10)
+        {
+            var elementLocator = By.XPath($"//span[contains(text(),'{content}')]");
+            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
+            var elements = driver.FindElements(elementLocator);
+            if (elements.Count == 0)
+            {
+                throw new NoSuchElementException(
+                    "No elements " + elementLocator + " ClickElementAndWaitForExcludingFromDom");
+            }
+            var element = elements.First(e => e.Displayed);
+
+            driver.ExecuteJavaScript($"arguments[0].innerText = '{newContent}'", element);
+
+            // Das hier brauchts vermutlich nicht.
+            // Releases when element isn't part of the DOM anymore (Dialog i.g.).
+            //wait.Until(ExpectedConditions.StalenessOf(element));
         }
     }
 }
