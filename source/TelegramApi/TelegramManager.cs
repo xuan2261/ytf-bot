@@ -231,7 +231,7 @@ namespace TelegramApi
                                    if (listOfMetaVideoDate.Count > 0)
                                    {
                                        // Minimum timeout plus the amount of videos found in file newNotProcessedFile
-                                       var timeOut = 5 + listOfMetaVideoDate.Count * 2;
+                                       var timeOut = 10 + listOfMetaVideoDate.Count * 2;
                                        this.logger.LogDebug(
                                            $"Bot {theBot.Name} start sending to {theChat.ChatName} with id {theChat.ChatId}. " +
                                            $"Timeout {timeOut} seconds. Videos {listOfMetaVideoDate.Count}");
@@ -282,7 +282,7 @@ namespace TelegramApi
         {
             try
             {
-                await this.irgendeinBot.SendToChatAsync(this.debugChannel, message, TimeSpan.FromSeconds(10).Seconds);
+                await this.irgendeinBot.SendToChatAsync(this.debugChannel, message, TimeSpan.FromSeconds(15).Seconds);
             }
             catch (Exception e)
             {

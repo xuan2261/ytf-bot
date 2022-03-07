@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Interactions;
@@ -76,7 +77,7 @@ namespace FacebookAutomation
                 options.AddArgument("--window-size=1500,1200");
                 options.AddExcludedArgument("enable-logging");
 
-                this.webDriver = new ChromeDriver(AppDomain.CurrentDomain.BaseDirectory, options);
+                this.webDriver = new ChromeDriver(options);
             }
             catch (Exception e)
             {
@@ -96,7 +97,9 @@ namespace FacebookAutomation
             {
                 // Navigate to Facebook
                 this.webDriver.Url = "https://www.facebook.com/";
-
+                
+                Thread.Sleep(TimeSpan.FromSeconds(3));
+                
                 // Accept the Cookies and what not
                 ClickElementAndWaitForExcludingFromDom(this.webDriver, CssSelectorCookieAccept);
 
@@ -127,6 +130,8 @@ namespace FacebookAutomation
             {
                 // Navigate to group
                 this.webDriver.Url = $"https://www.facebook.com/groups/{groupId}";
+
+                Thread.Sleep(TimeSpan.FromSeconds(3));
 
                 // Open the dialog for posting content
                 ClickAndWaitForClickableElement(this.webDriver, XPathSelectorWriteIntoGroup);

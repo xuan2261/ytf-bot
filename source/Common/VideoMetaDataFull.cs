@@ -162,8 +162,11 @@ namespace Common
 
             // Promo own shit
             readableString += "t.me/blackmetalpromotion" + Environment.NewLine;
-            if (IsGerman()) readableString += "t.me/germanblackmetal";
-            
+            readableString += "t.me/germanblackmetal" + Environment.NewLine;
+           
+            // Add the link to the video a second time. That's because... dont know where to start fb fuck off.
+            readableString += BuildYoutubeLinkToVideo();
+
             return readableString;
         }
 

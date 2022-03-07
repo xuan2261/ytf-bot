@@ -27,13 +27,14 @@ namespace FacebookAutomation
         /// </summary>
         public readonly string WorkDir;
 
-        public FbManager(string workDir, FacebookConfig fbConfig, Action<string, string>? callback = null)
+        public FbManager(string workDir, FacebookConfig fbConfig, Action<string, string> callback = null)
         {
             if (!Directory.Exists(workDir))
             {
                 Directory.CreateDirectory(workDir);
             }
             this.WorkDir = workDir;
+            this.logger = new Logger("FbManager.log");
 
             if (callback != null)
             {
@@ -42,6 +43,16 @@ namespace FacebookAutomation
 
             this.listOfProcessedFilesWorker01 = Path.Combine(this.WorkDir, $"__FaceBookWorker_01.list");
             this.facebookConfig= fbConfig;
+        }
+
+        /// <summary>
+        /// This method stops the internal worker.
+        /// No channel will be read after that and the object has to be destroyed.
+        /// </summary>
+        public void StopAllWorker()
+        {
+            this.fbWorkerShallRun_01 = false;
+            this.logger.LogWarning("All Facebook workers are in standby now.");
         }
 
         public async Task StartFbWorker01()
@@ -54,7 +65,7 @@ namespace FacebookAutomation
                                    if (!SendVideoDataIntoGroupsAsync(this.listOfProcessedFilesWorker01,
                                                                      400,
                                                                      this.facebookConfig.Groups,
-                                                                     false).Wait(TimeSpan.FromSeconds(45)))
+                                                                     false).Wait(TimeSpan.FromSeconds(60)))
                                    {
                                        this.logger.LogWarning("TimeOut in FbWorker01 async. Check it.");
                                        this.sendDebugMessage?.Invoke("WARN ***", "TimeOut in FbWorker01 async. Check it.");
@@ -127,52 +138,59 @@ namespace FacebookAutomation
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="notYetProcessed"></param>
+        /// <param name="faceBookGroups"></param>
+        /// <param name="gaymanSensitive"></param>
+        /// <returns></returns>
         public async Task SendVideoMetaDataToGroupsAsync(List<string> notYetProcessed,
                                                          List<Group> faceBookGroups,
                                                          bool gaymanSensitive = false)
         {
             try
             {
-                var offsetSecs = 30;
-                var secsPerGroup = 30;
-
                 await Task.Run(() =>
                                {
                                    var listOfMetaVideoDate = VideoMetaDataFull.DeserializeFiles(notYetProcessed, out var filesNotFound);
                                    filesNotFound.ForEach(file => this.logger.LogWarning($"{file} not found"));
 
-                                   var theTasks = new List<Task>();
-                                   listOfMetaVideoDate.ForEach(video =>
-                                                               {
-                                                                   if (gaymanSensitive)
+                                   
+                                   //var theTasks = new List<Task>();
+                                   if (listOfMetaVideoDate.Count > 0)
+                                   {
+                                       var fbAuto = new FacebookAutomation(this.WorkDir, this.logger);
+                                       fbAuto.Login(this.facebookConfig.Email, this.facebookConfig.Pw);
+
+                                       listOfMetaVideoDate.ForEach(video =>
                                                                    {
-                                                                       if (video.IsGerman())
+                                                                       var fbDescription = video.GetFacebookDescription();
+
+                                                                       if (gaymanSensitive)
+                                                                       {
+                                                                           if (video.IsGerman())
+                                                                           {
+                                                                               faceBookGroups.ForEach(group =>
+                                                                               {
+                                                                                   fbAuto.PublishTextContentInFaceBookGroup(group.GroupId, fbDescription);
+                                                                               });
+                                                                           }
+                                                                       }
+                                                                       else
                                                                        {
                                                                            faceBookGroups.ForEach(group =>
                                                                                                   {
-                                                                                                      theTasks.Add(SendVideoToFbGroupAsync(video, group));
+                                                                                                      fbAuto.PublishTextContentInFaceBookGroup(group.GroupId, fbDescription);
                                                                                                   });
                                                                        }
-                                                                   }
-                                                                   else
-                                                                   {
-                                                                       faceBookGroups.ForEach(group =>
-                                                                                              {
-                                                                                                  theTasks.Add(SendVideoToFbGroupAsync(video,group));
-                                                                                              });
-                                                                   }
 
-                                                                   theTasks.Add(SendVideoToOwnSite(video));
-                                                               });
-                                   if (theTasks.Count > 0)
-                                   {
-                                       if (!Task.WaitAll(theTasks.ToArray(), TimeSpan.FromSeconds(offsetSecs + faceBookGroups.Count * secsPerGroup)))
-                                       {
-                                           this.logger.LogError("Timeout. Check Sending to FB groups");
-                                       }
-                                       this.logger.LogInfo($"Published messages in FB groups. {listOfMetaVideoDate.Count} videos.");
+                                                                       //theTasks.Add(SendVideoToOwnSite(video));
+                                                                   });
+
+                                       fbAuto.Dispose();
+                                       this.logger.LogInfo($"Send Infos for videos to facebook groups");
                                    }
-
                                });
             }
             catch (Exception e)
@@ -181,6 +199,12 @@ namespace FacebookAutomation
             }
         }
 
+        /// <summary>
+        /// Publish video in group.
+        /// </summary>
+        /// <param name="video">The video</param>
+        /// <param name="faceBookGroup">The group.</param>
+        /// <returns></returns>
         public async Task SendVideoToFbGroupAsync(VideoMetaDataFull video,
                                                   Group faceBookGroup)
         {
@@ -192,8 +216,8 @@ namespace FacebookAutomation
                                    fbAuto.Login(this.facebookConfig.Email, this.facebookConfig.Pw);
                                    var fbDescription = video.GetFacebookDescription();
                                    fbAuto.PublishTextContentInFaceBookGroup(faceBookGroup.GroupId, fbDescription);
+                                   fbAuto.Dispose();
                                    this.logger.LogInfo($"Send Infos for video {video.Id} to facebook group {faceBookGroup.GroupName}");
-
                                });
             }
             catch (Exception e)
@@ -202,6 +226,11 @@ namespace FacebookAutomation
             }
         }
 
+        /// <summary>
+        /// Publish video on own site.
+        /// </summary>
+        /// <param name="video">The video</param>
+        /// <returns></returns>
         public async Task SendVideoToOwnSite(VideoMetaDataFull video)
         {
             try

@@ -1,4 +1,5 @@
-﻿using BotService;
+﻿using System.Runtime.InteropServices.ComTypes;
+using BotService;
 using Common;
 using SimpleLogger;
 using TelegramApi;
@@ -12,11 +13,12 @@ var serviceWorkDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Servic
 
 myLogger.LogInfo("Start Telegram Worker");
 var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, VideoMetaDataFull.VideoFileSearchPattern, serviceWorkDir);
+//_ = telegramManager.StartSomeBotToHaufenChat();
 _ = telegramManager.StartBlackMetaloidToBmChat();
 _ = telegramManager.StartGermanBlackMetaloidToGbmChat();
 
 myLogger.LogInfo("Start Youtube Worker");
-var youtubeApi = new YoutubeApi.YoutubeApi(completeServiceConfig.YoutubeConfig.ApiKey, serviceWorkDir);
+var youtubeApi = new YoutubeApi.YoutubeApi(completeServiceConfig.YoutubeConfig.ApiKey4Testing, serviceWorkDir);
 var myYoutubeManager = new YtManager(youtubeApi, serviceWorkDir);
 _ = myYoutubeManager.StartYoutubeWorker(completeServiceConfig.YoutubeConfig.Channels, 10, MyCallback);
 

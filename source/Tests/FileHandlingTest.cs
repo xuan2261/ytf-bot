@@ -16,12 +16,12 @@ namespace Tests
         /// <summary>
         /// Delete all content of working directory. 
         /// </summary>
-        public void SetupTest()
+        public static void SetupTest(string workingFolder)
         {
-            if (Directory.Exists(WorkFolder))
+            if (Directory.Exists(workingFolder))
             {
                 // Clean dir
-                var di = new DirectoryInfo(WorkFolder);
+                var di = new DirectoryInfo(workingFolder);
                 foreach (var file in di.EnumerateFiles())
                 {
                     file.Delete();
@@ -34,7 +34,7 @@ namespace Tests
             }
             else
             {
-                Directory.CreateDirectory(WorkFolder);
+                Directory.CreateDirectory(workingFolder);
             }
         }
 
@@ -104,7 +104,7 @@ namespace Tests
         [TestMethod]
         public void TestTrimFile()
         {
-            SetupTest();
+            SetupTest(WorkFolder);
 
             const string BimsATestFile = "testFile.txt";
             for (var i = 0; i < 56; i++)
@@ -121,7 +121,7 @@ namespace Tests
         [TestMethod]
         public void TestRollingFileUpdater()
         {
-            SetupTest();
+            SetupTest(WorkFolder);
             var mySubDir = "subDir_RollingFileTester";
             var subDirFullPath = Path.Combine(WorkFolder, mySubDir);
             CreateVideoMetaFiles(15, mySubDir, WorkFolder);
@@ -152,7 +152,7 @@ namespace Tests
         [TestMethod]
         public void TestFindNotYetProcessedVideoIdFiles()
         {
-            SetupTest();
+            SetupTest(WorkFolder);
             var mySubDir = "theSubDir";
             CreateVideoMetaFiles(3, mySubDir, WorkFolder);
 
@@ -175,7 +175,7 @@ namespace Tests
         [TestMethod]
         public void PerformanceTestFindNotYetProcessedVideoIdFiles()
         {
-            SetupTest();
+            SetupTest(WorkFolder);
             var mySubDir = "theSubDir";
             var myListOfFiles = CreateListOfIds(500);
             CreateVideoMetaFiles(500, mySubDir, WorkFolder);
@@ -196,7 +196,7 @@ namespace Tests
         [TestMethod]
         public void TestNotYetProcessedFilesIfThereIsNoList()
         {
-            SetupTest();
+            SetupTest(WorkFolder);
             CreateVideoMetaFiles(3, "theSubDir1", WorkFolder);
 
             var fileName = Path.Combine(WorkFolder, "listOfProcessedFiles.list");
@@ -214,7 +214,7 @@ namespace Tests
         [TestMethod]
         public void TestGetIdsOfFilesNotYetIncludedInFolder()
         {
-            SetupTest();
+            SetupTest(WorkFolder);
             var mySubDir = "theSubDir";
             CreateVideoMetaFiles(3, mySubDir, WorkFolder);
             var myListOfIds = CreateListOfIds(3);
@@ -241,7 +241,7 @@ namespace Tests
         [TestMethod]
         public void FindVideoIdFilesInSubfoldersTest()
         {
-            SetupTest();
+            SetupTest(WorkFolder);
             CreateVideoMetaFiles(3, "theSubDir1", WorkFolder);
             CreateVideoMetaFiles(3, "theSubDir2", WorkFolder);
 

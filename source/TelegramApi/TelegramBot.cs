@@ -42,7 +42,7 @@ namespace TelegramApi
         /// Async method to send message to telegram chat or user.
         /// Method is fire and forget, errors are logged on console or in file.
         /// </summary>
-        /// <param name="chatId">Chat to send a message in.</param>
+        /// <param name="theChat">Chat to send a message in.</param>
         /// <param name="messageToPublish">The message to publish.</param>
         /// <param name="timeOut">After timeOut seconds an error is logged and there was no message sent.</param>
         public async Task SendToChatAsync(Chat theChat, string messageToPublish, int timeOut)
@@ -59,15 +59,20 @@ namespace TelegramApi
                                    var autoResetForSendMessage = new AutoResetEvent(false);
 
                                    // this.logger.LogDebug($"Start sending to chat {theChat.ChatName}. Message: {shortMessage}");
-                                   _ = InternalSendMessageToChatAsync(theChat.ChatId, messageToPublish, cancellationTokenSource.Token, autoResetForSendMessage);
+                                   _ = InternalSendMessageToChatAsync(theChat.ChatId, 
+                                                                      messageToPublish, 
+                                                                      cancellationTokenSource.Token, 
+                                                                      autoResetForSendMessage);
 
                                    if (!autoResetForSendMessage.WaitOne(TimeSpan.FromSeconds(timeOut)))
                                    {
                                        this.logger.LogError($"TimeOut sending to chat {theChat.ChatName}. Message: {shortMessage}...");
                                        cancellationTokenSource.Cancel();
                                    }
-
-                                   this.logger.LogDebug($"Success sending to chat {theChat.ChatName}. Message: {shortMessage}...");
+                                   else
+                                   {
+                                       this.logger.LogInfo($"Success sending to chat {theChat.ChatName}. Message: {shortMessage}...");
+                                   }
                                }
                                catch (Exception e)
                                {
