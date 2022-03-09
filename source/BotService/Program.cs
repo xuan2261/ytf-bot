@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices.ComTypes;
 using BotService;
 using Common;
+using FacebookAutomation;
 using SimpleLogger;
 using TelegramApi;
 using YoutubeApi;
@@ -14,8 +15,12 @@ var serviceWorkDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Servic
 myLogger.LogInfo("Start Telegram Worker");
 var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, VideoMetaDataFull.VideoFileSearchPattern, serviceWorkDir);
 //_ = telegramManager.StartSomeBotToHaufenChat();
-_ = telegramManager.StartBlackMetaloidToBmChat();
-_ = telegramManager.StartGermanBlackMetaloidToGbmChat();
+//_ = telegramManager.StartBlackMetaloidToBmChat();
+//_ = telegramManager.StartGermanBlackMetaloidToGbmChat();
+
+myLogger.LogInfo("Star Facebook Worker");
+var fbManager = new FbManager(serviceWorkDir, completeServiceConfig.FacebookConfig);
+_ = fbManager.StartFbWorker01();
 
 myLogger.LogInfo("Start Youtube Worker");
 var youtubeApi = new YoutubeApi.YoutubeApi(completeServiceConfig.YoutubeConfig.ApiKey4Testing, serviceWorkDir);
@@ -33,6 +38,7 @@ while (Console.ReadKey().Key != ConsoleKey.E)
 }
 
 telegramManager.StopAllWorker();
+fbManager.StopAllWorker();
 myYoutubeManager.StopYoutubeWorker();
 
 Console.WriteLine("All workers stopped");

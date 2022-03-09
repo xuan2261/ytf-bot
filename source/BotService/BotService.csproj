@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="98.0.4758.10200" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\cs-simple-logger\Source\SimpleLogger.csproj" />
     <ProjectReference Include="..\FacebookAutomation\FacebookAutomation.csproj" />
     <ProjectReference Include="..\TelegramApi\TelegramApi.csproj" />

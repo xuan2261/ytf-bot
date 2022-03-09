@@ -20,8 +20,11 @@ namespace FacebookAutomation
         [JsonPropertyName("pw")]
         public string Pw { get; set; }
 
-        [JsonPropertyName("groups")]
-        public List<Group> Groups { get; set; }
+        [JsonPropertyName("testGroups")]
+        public List<Group> TestGroups { get; set; }
+
+        [JsonPropertyName("taskGroups_01")]
+        public List<Group> TaskGroups_01 { get; set; }
     }
 
 }

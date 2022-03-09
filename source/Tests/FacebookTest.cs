@@ -37,29 +37,15 @@ namespace Tests
         [TestMethod]
         public void SimpleLogInAndPostToGroup()
         {
-            var theMessage = GetVideometaData("ZWHBsKm9Egk").GetFacebookDescription();
+            var theMessage = GetVideometaData("79VxD19n9HI").GetFacebookDescription();
 
             var logger = new Logger("TestFacebookLogFile.log");
             var facebook = new FbAutomation(WorkFolder, logger);
             var facebookConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").FacebookConfig;
 
             facebook.Login(facebookConfig.Email, facebookConfig.Pw);
-            facebook.PublishTextContentInFaceBookGroup(facebookConfig.Groups[0].GroupId, theMessage);
-        }
-
-        /// <summary>
-        /// Use Fbmanager to publish in group.
-        /// </summary>
-        [TestMethod]
-        public void TestFbManagerSendVideoToFbGroupAsync()
-        {
-            var theVideo = GetVideometaData("ZWHBsKm9Egk");
-
-            var logger = new Logger("TestFacebookLogFile.log");
-            var facebookConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").FacebookConfig;
-            var fbManager = new FbManager(WorkFolder, facebookConfig);
-
-            fbManager.SendVideoToFbGroupAsync(theVideo, facebookConfig.Groups[0]).Wait();
+            facebook.PublishTextContentInFaceBookGroup(facebookConfig.TestGroups[0].GroupId, theMessage);
+            facebook.Dispose();
         }
 
         /// <summary>
@@ -83,7 +69,7 @@ namespace Tests
             var facebookConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").FacebookConfig;
             
             var fbManager = new FbManager(WorkFolder, facebookConfig);
-            fbManager.SendVideoMetaDataToGroupsAsync(listOfFileNames, facebookConfig.Groups.Take(2).ToList(), false).Wait();
+            fbManager.SendVideoMetaDataToGroupsAsync(listOfFileNames, facebookConfig.TestGroups.Take(2).ToList(), false).Wait();
         }
 
         /// <summary>
@@ -108,7 +94,7 @@ namespace Tests
             File.WriteAllText(pathToListFile1, string.Empty);
             var listOfFileNames1 = FileHandling.FindNotYetProcessedVideoIdFiles(pathToListFile1, WorkFolder, VideoMetaDataFull.VideoFileSearchPattern);
             var fbManager1 = new FbManager(WorkFolder, facebookConfig);
-            tasks.Add(fbManager1.SendVideoMetaDataToGroupsAsync(listOfFileNames1, facebookConfig.Groups, false));
+            tasks.Add(fbManager1.SendVideoMetaDataToGroupsAsync(listOfFileNames1, facebookConfig.TestGroups, false));
 
             Task.WaitAll(tasks.ToArray());
         }

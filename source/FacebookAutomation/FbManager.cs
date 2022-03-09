@@ -64,7 +64,7 @@ namespace FacebookAutomation
                                {
                                    if (!SendVideoDataIntoGroupsAsync(this.listOfProcessedFilesWorker01,
                                                                      400,
-                                                                     this.facebookConfig.Groups,
+                                                                     this.facebookConfig.TestGroups,
                                                                      false).Wait(TimeSpan.FromSeconds(60)))
                                    {
                                        this.logger.LogWarning("TimeOut in FbWorker01 async. Check it.");
@@ -156,8 +156,6 @@ namespace FacebookAutomation
                                    var listOfMetaVideoDate = VideoMetaDataFull.DeserializeFiles(notYetProcessed, out var filesNotFound);
                                    filesNotFound.ForEach(file => this.logger.LogWarning($"{file} not found"));
 
-                                   
-                                   //var theTasks = new List<Task>();
                                    if (listOfMetaVideoDate.Count > 0)
                                    {
                                        var fbAuto = new FacebookAutomation(this.WorkDir, this.logger);
@@ -184,40 +182,11 @@ namespace FacebookAutomation
                                                                                                       fbAuto.PublishTextContentInFaceBookGroup(group.GroupId, fbDescription);
                                                                                                   });
                                                                        }
-
-                                                                       //theTasks.Add(SendVideoToOwnSite(video));
                                                                    });
 
                                        fbAuto.Dispose();
                                        this.logger.LogInfo($"Send Infos for videos to facebook groups");
                                    }
-                               });
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError(e.Message);
-            }
-        }
-
-        /// <summary>
-        /// Publish video in group.
-        /// </summary>
-        /// <param name="video">The video</param>
-        /// <param name="faceBookGroup">The group.</param>
-        /// <returns></returns>
-        public async Task SendVideoToFbGroupAsync(VideoMetaDataFull video,
-                                                  Group faceBookGroup)
-        {
-            try
-            {
-                await Task.Run(() =>
-                               {
-                                   var fbAuto = new FacebookAutomation(this.WorkDir, this.logger);
-                                   fbAuto.Login(this.facebookConfig.Email, this.facebookConfig.Pw);
-                                   var fbDescription = video.GetFacebookDescription();
-                                   fbAuto.PublishTextContentInFaceBookGroup(faceBookGroup.GroupId, fbDescription);
-                                   fbAuto.Dispose();
-                                   this.logger.LogInfo($"Send Infos for video {video.Id} to facebook group {faceBookGroup.GroupName}");
                                });
             }
             catch (Exception e)

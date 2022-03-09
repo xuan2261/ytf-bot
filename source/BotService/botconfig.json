@@ -2,7 +2,17 @@
   "facebookConfig": {
     "email": "email address of account",
     "pw": "password of account",
-    "groups": [
+    "testGroups": [
+      {
+        "groupName": "name of group",
+        "groupId": "id of group"
+      },
+      {
+        "groupName": "name of second group",
+        "groupId": "id of second group"
+      }
+    ],
+    "taskGroups_01": [
       {
         "groupName": "name of group",
         "groupId": "id of group"

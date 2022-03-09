@@ -28,6 +28,11 @@ namespace FacebookAutomation
         /// </summary>
         public readonly string WorkDir;
 
+        // http://xpather.com/
+        // https://stackoverflow.com/questions/69909751/why-is-xpath-containstext-substring-not-working-as-expected?noredirect=1&lq=1
+        // https://selenium-python.readthedocs.io/locating-elements.html
+        // https://www.guru99.com/using-contains-sbiling-ancestor-to-find-element-in-selenium.html#:~:text=contains()%20in%20Selenium%20is,()%20function%20throughout%20the%20webpage.
+
         // css selector to find the cookie accept button
         private static readonly By CssSelectorCookieAccept =
             By.CssSelector("[data-testid = 'cookie-policy-manage-dialog-accept-button']");
@@ -37,16 +42,19 @@ namespace FacebookAutomation
             By.CssSelector("[data-testid = 'royal_login_button']");
 
         // xpath selector to find element that opens the post to group dialog
-        private static readonly By XPathSelectorWriteIntoGroup =
-            By.XPath("//*[contains(text(),'Schreib etwas')]");
+        private static readonly By OpenPostToGroupDialogSelector =
+            By.XPath("//div[@data-pagelet='GroupInlineComposer'] //span[contains(.,'Schreib etwas') and contains(@style,'webkit-box')]");
 
         // xpath selector to find button post to group
-        private static readonly By XPathSelectorPostInGroup =
-            By.XPath("//div[@aria-label='Posten'][@role='button']");
+        private static readonly By PostToGroupButtonSelector =
+            By.XPath("//div[@aria-label='Posten' and @role='button']");
 
         // xpath selector for youtube preview box in that dialog for publishing contents in a group
         private static readonly By XPathSelectorYoutubePreviewBox =
-            By.XPath("//a[@role='link'][contains(.,'youtube')]");
+            By.XPath("//a[@role='link' and @target='_blank' and contains(.,'youtube')]");
+        
+        // beinhaltet link, findet so aber 2 Elemente
+        //a[@role='link' and @target='_blank' and contains(@href,'youtube') and contains(@href,'PyAexdhNXjY')] 
 
         // id selector to find input box for email
         private static readonly By IdSelectorEmail =
@@ -75,6 +83,7 @@ namespace FacebookAutomation
                 var options = new ChromeOptions();
                 options.AddArgument("--disable-notifications");
                 options.AddArgument("--window-size=1500,1200");
+               // options.AddArgument("--headless");
                 options.AddExcludedArgument("enable-logging");
 
                 this.webDriver = new ChromeDriver(options);
@@ -98,7 +107,7 @@ namespace FacebookAutomation
                 // Navigate to Facebook
                 this.webDriver.Url = "https://www.facebook.com/";
                 
-                Thread.Sleep(TimeSpan.FromSeconds(3));
+                Thread.Sleep(TimeSpan.FromSeconds(1));
                 
                 // Accept the Cookies and what not
                 ClickElementAndWaitForExcludingFromDom(this.webDriver, CssSelectorCookieAccept);
@@ -131,13 +140,13 @@ namespace FacebookAutomation
                 // Navigate to group
                 this.webDriver.Url = $"https://www.facebook.com/groups/{groupId}";
 
-                Thread.Sleep(TimeSpan.FromSeconds(3));
+                Thread.Sleep(TimeSpan.FromSeconds(1));
 
                 // Open the dialog for posting content
-                ClickAndWaitForClickableElement(this.webDriver, XPathSelectorWriteIntoGroup);
+                ClickAndWaitForClickableElement(this.webDriver, OpenPostToGroupDialogSelector);
 
                 // Wait until dialog is open by checking for existence of button "Posten"
-                WaitForElementToAppear(this.webDriver, XPathSelectorPostInGroup);
+                WaitForElementToAppear(this.webDriver, PostToGroupButtonSelector);
 
                 // Write the text of the message into the dialog. Note: this is not an input element.
                 var sendKeysAction = new Actions(this.webDriver).SendKeys(textToPublish);
@@ -146,12 +155,13 @@ namespace FacebookAutomation
                 // Wait for youtube preview box to appear
                 WaitForElementToAppear(this.webDriver, XPathSelectorYoutubePreviewBox);
 
-                ClickElementAndWaitForExcludingFromDom(this.webDriver, XPathSelectorPostInGroup);
+                ClickElementAndWaitForExcludingFromDom(this.webDriver, PostToGroupButtonSelector);
+
+                Thread.Sleep(TimeSpan.FromSeconds(1));
             }
             catch (Exception e)
             {
                 this.logger.LogError(e.Message);
-                throw;
             }
         }
 
@@ -197,7 +207,7 @@ namespace FacebookAutomation
             try
             {
                 var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
-                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(elementLocator));
+                wait.Until(ExpectedConditions.ElementExists(elementLocator));
             }
             catch (NoSuchElementException e)
             {
