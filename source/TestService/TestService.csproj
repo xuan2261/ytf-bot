@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\BotService\mybotconfig.json" Link="mybotconfig.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="99.0.4844.5100" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\cs-simple-logger\Source\SimpleLogger.csproj" />
+    <ProjectReference Include="..\FacebookAutomation\FacebookAutomation.csproj" />
+    <ProjectReference Include="..\TelegramApi\TelegramApi.csproj" />
+    <ProjectReference Include="..\Tests\Tests.csproj" />
+    <ProjectReference Include="..\YoutubeApi\YoutubeApi.csproj" />
+  </ItemGroup>
+
+</Project>

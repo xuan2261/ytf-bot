@@ -15,7 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YoutubeApi", "YoutubeApi\Yo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{B5EC17A1-E486-4EFD-B0F4-49AA042D6993}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{7289B200-2271-4A41-80D5-7B08E8601A83}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{7289B200-2271-4A41-80D5-7B08E8601A83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestService", "TestService\TestService.csproj", "{116A392F-48CA-49D9-8E51-F2916EE9AEE4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{7289B200-2271-4A41-80D5-7B08E8601A83}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7289B200-2271-4A41-80D5-7B08E8601A83}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7289B200-2271-4A41-80D5-7B08E8601A83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{116A392F-48CA-49D9-8E51-F2916EE9AEE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{116A392F-48CA-49D9-8E51-F2916EE9AEE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{116A392F-48CA-49D9-8E51-F2916EE9AEE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{116A392F-48CA-49D9-8E51-F2916EE9AEE4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

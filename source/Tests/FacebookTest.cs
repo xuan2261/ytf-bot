@@ -23,10 +23,8 @@ namespace Tests
         /// <returns></returns>
         public VideoMetaDataFull GetVideometaData(string videoId)
         {
-            var localLogger = new Logger("yt_test.log");
-            localLogger.LogDebug("Test was set up.");
             var botConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json");
-            var youtubeApi = new YoutubeApi.YoutubeApi(botConfig.YoutubeConfig.ApiKey4Testing, WorkFolder, localLogger);
+            var youtubeApi = new YoutubeApi.YoutubeApi(botConfig.YoutubeConfig.ApiKey4Testing, WorkFolder);
 
             return youtubeApi.GetVideoMetaData(videoId).Result;
         }
@@ -44,7 +42,7 @@ namespace Tests
             var facebookConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").FacebookConfig;
 
             facebook.Login(facebookConfig.Email, facebookConfig.Pw);
-            facebook.PublishTextContentInFaceBookGroup(facebookConfig.TestGroups[0].GroupId, theMessage);
+            facebook.PublishTextContentInFaceBookGroup(facebookConfig.TestGroups[0], theMessage);
             facebook.Dispose();
         }
 

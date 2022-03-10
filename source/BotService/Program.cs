@@ -19,7 +19,7 @@ var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, 
 //_ = telegramManager.StartGermanBlackMetaloidToGbmChat();
 
 myLogger.LogInfo("Star Facebook Worker");
-var fbManager = new FbManager(serviceWorkDir, completeServiceConfig.FacebookConfig);
+var fbManager = new FbManager(serviceWorkDir, completeServiceConfig.FacebookConfig, MyCallback);
 _ = fbManager.StartFbWorker01();
 
 myLogger.LogInfo("Start Youtube Worker");

@@ -18,7 +18,7 @@ namespace FacebookAutomation
     public class FacebookAutomation : IDisposable
     {
         private readonly Logger logger;
-        
+
         /// <summary>
         /// The WorkDir contains all the files needed for the FacebookAutomation:
         /// 1.  Subfolders in working directory within lists of files within VideoMetaDataFull per video to check which videos
@@ -34,27 +34,33 @@ namespace FacebookAutomation
         // https://www.guru99.com/using-contains-sbiling-ancestor-to-find-element-in-selenium.html#:~:text=contains()%20in%20Selenium%20is,()%20function%20throughout%20the%20webpage.
 
         // css selector to find the cookie accept button
-        private static readonly By CssSelectorCookieAccept =
-            By.CssSelector("[data-testid = 'cookie-policy-manage-dialog-accept-button']");
+        private static readonly Tuple<string, By> CssSelectorCookieAccept = 
+            new(nameof(CssSelectorCookieAccept),
+                By.CssSelector("[data-testid = 'cookie-policy-manage-dialog-accept-button']"));
 
         // css selector to find the login button
-        private static readonly By CssSelectorLogInButton =
-            By.CssSelector("[data-testid = 'royal_login_button']");
+        private static readonly Tuple<string, By> CssSelectorLogInButton =
+            new(nameof(CssSelectorLogInButton),
+                By.CssSelector("[data-testid = 'royal_login_button']"));
 
         // xpath selector to find element that opens the post to group dialog
-        private static readonly By OpenPostToGroupDialogSelector =
-            By.XPath("//div[@data-pagelet='GroupInlineComposer'] //span[contains(.,'Schreib etwas') and contains(@style,'webkit-box')]");
+        private static readonly Tuple<string, By> OpenPostToGroupDialogSelector =
+            new(nameof(OpenPostToGroupDialogSelector),
+                By.XPath("//div[@data-pagelet='GroupInlineComposer'] //span[contains(.,'Schreib etwas') and contains(@style,'webkit-box')]"));
 
         // xpath selector to find button post to group
-        private static readonly By PostToGroupButtonSelector =
-            By.XPath("//div[@aria-label='Posten' and @role='button']");
+        private static readonly Tuple<string, By> PostToGroupButtonSelector =
+            new(nameof(PostToGroupButtonSelector),
+                By.XPath("//div[@aria-label='Posten' and @role='button']"));
 
         // xpath selector for youtube preview box in that dialog for publishing contents in a group
-        private static readonly By XPathSelectorYoutubePreviewBox =
-            By.XPath("//a[@role='link' and @target='_blank' and contains(.,'youtube')]");
-        
+        private static readonly Tuple<string, By> XPathSelectorYoutubePreviewBox =
+            new(nameof(XPathSelectorYoutubePreviewBox),
+                By.XPath("//a[@role='link' and @target='_blank' and contains(.,'youtube')]"));
+
         // beinhaltet link, findet so aber 2 Elemente
         //a[@role='link' and @target='_blank' and contains(@href,'youtube') and contains(@href,'PyAexdhNXjY')] 
+
 
         // id selector to find input box for email
         private static readonly By IdSelectorEmail =
@@ -83,14 +89,14 @@ namespace FacebookAutomation
                 var options = new ChromeOptions();
                 options.AddArgument("--disable-notifications");
                 options.AddArgument("--window-size=1500,1200");
-               // options.AddArgument("--headless");
+                options.AddArgument("--headless");
                 options.AddExcludedArgument("enable-logging");
 
                 this.webDriver = new ChromeDriver(options);
             }
             catch (Exception e)
             {
-                this.logger.LogError($"Error when initializing FacebookAutomation. {Environment.NewLine} Exception: {e}");
+                this.logger.LogError($"Error when initializing FacebookAutomation. {Environment.NewLine} Exception: {e.Message}");
                 throw;
             }
         }
@@ -106,9 +112,9 @@ namespace FacebookAutomation
             {
                 // Navigate to Facebook
                 this.webDriver.Url = "https://www.facebook.com/";
-                
+
                 Thread.Sleep(TimeSpan.FromSeconds(1));
-                
+
                 // Accept the Cookies and what not
                 ClickElementAndWaitForExcludingFromDom(this.webDriver, CssSelectorCookieAccept);
 
@@ -125,7 +131,7 @@ namespace FacebookAutomation
             }
             catch (Exception e)
             {
-                this.logger.LogError("Error while Login. ExceptionMessage: " + e);
+                this.logger.LogError("Error while Login. ExceptionMessage: " + e.Message);
                 throw;
             }
         }
@@ -133,36 +139,53 @@ namespace FacebookAutomation
         /// <summary>
         /// Synchronous method to publish textual content into a Facebook group.
         /// </summary>
-        public void PublishTextContentInFaceBookGroup(string groupId, string textToPublish)
+        public bool PublishTextContentInFaceBookGroup(Group fbGroup, string textToPublish)
         {
             try
             {
                 // Navigate to group
-                this.webDriver.Url = $"https://www.facebook.com/groups/{groupId}";
+                this.webDriver.Url = $"https://www.facebook.com/groups/{fbGroup.GroupId}";
 
-                Thread.Sleep(TimeSpan.FromSeconds(1));
+                // Wait until that post to group thing was hung into the dom
+                if (!RepeatFunction(WaitForElementToAppear, this.webDriver, OpenPostToGroupDialogSelector))
+                {
+                    return false;
+                }
 
                 // Open the dialog for posting content
-                ClickAndWaitForClickableElement(this.webDriver, OpenPostToGroupDialogSelector);
+                if (!RepeatFunction(ClickAndWaitForClickableElement, this.webDriver, OpenPostToGroupDialogSelector))
+                {
+                    return false;
+                }
 
                 // Wait until dialog is open by checking for existence of button "Posten"
-                WaitForElementToAppear(this.webDriver, PostToGroupButtonSelector);
+                if (!RepeatFunction(WaitForElementToAppear, this.webDriver, PostToGroupButtonSelector))
+                {
+                    return false;
+                }
 
                 // Write the text of the message into the dialog. Note: this is not an input element.
                 var sendKeysAction = new Actions(this.webDriver).SendKeys(textToPublish);
                 sendKeysAction.Perform();
 
                 // Wait for youtube preview box to appear
-                WaitForElementToAppear(this.webDriver, XPathSelectorYoutubePreviewBox);
+                if (!RepeatFunction(WaitForElementToAppear, this.webDriver, XPathSelectorYoutubePreviewBox))
+                {
+                    return false;
+                }
 
-                ClickElementAndWaitForExcludingFromDom(this.webDriver, PostToGroupButtonSelector);
-
-                Thread.Sleep(TimeSpan.FromSeconds(1));
+                // Click post to group and wait until box was excluded from dom
+                if (!RepeatFunction(ClickElementAndWaitForExcludingFromDom, this.webDriver, PostToGroupButtonSelector))
+                {
+                    return false;
+                }
             }
             catch (Exception e)
             {
                 this.logger.LogError(e.Message);
+                return false;
             }
+            return true;
         }
 
         /// <summary>
@@ -170,12 +193,12 @@ namespace FacebookAutomation
         /// the DOM anymore.
         /// In other words this method waits after clicking until you are logged in.
         /// </summary>
-        private void ClickElementAndWaitForExcludingFromDom(IWebDriver driver, By elementLocator, int timeOut = 10)
+        private bool ClickElementAndWaitForExcludingFromDom(IWebDriver driver, Tuple<string, By> elementLocator, int timeOut = 10)
         {
             try
             {
                 var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
-                var elements = driver.FindElements(elementLocator);
+                var elements = driver.FindElements(elementLocator.Item2);
                 if (elements.Count == 0)
                 {
                     throw new NoSuchElementException(
@@ -188,48 +211,46 @@ namespace FacebookAutomation
                 // Releases when element isn't part of the DOM anymore (Dialog i.g.).
                 wait.Until(ExpectedConditions.StalenessOf(element));
             }
-            catch (NoSuchElementException e)
-            {
-                this.logger.LogError("Element with locator: '" + elementLocator + "' was not found. Exception.Message: " + e.Message);
-                throw;
-            }
             catch (Exception e)
             {
-                this.logger.LogError(e.ToString());
+                this.logger.LogError(GetLogMessage(e, elementLocator));
+                return false;
             }
+            
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+            return true;
         }
 
         /// <summary>
         /// Waits for an element to appear in the DOM.
         /// </summary>
-        private void WaitForElementToAppear(IWebDriver driver, By elementLocator, int timeOut = 10)
+        private bool WaitForElementToAppear(IWebDriver driver, Tuple<string, By> elementLocator, int timeOut = 10)
         {
             try
             {
                 var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
-                wait.Until(ExpectedConditions.ElementExists(elementLocator));
-            }
-            catch (NoSuchElementException e)
-            {
-                this.logger.LogError("Element with locator: '" + elementLocator + "' was not found. Exception.Message: " + e.Message);
-                throw;
+                wait.Until(ExpectedConditions.ElementExists(elementLocator.Item2));
             }
             catch (Exception e)
             {
-                this.logger.LogError(e.ToString());
+                this.logger.LogError(GetLogMessage(e, elementLocator));
+                return false;
             }
+
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+            return true;
         }
 
         /// <summary>
         /// Unclear.
         /// Clicks an element and waits until its... clickable?
         /// </summary>
-        private void ClickAndWaitForClickableElement(IWebDriver driver, By elementLocator, int timeOut = 10)
+        private bool ClickAndWaitForClickableElement(IWebDriver driver, Tuple<string, By> elementLocator, int timeOut = 10)
         {
             try
             {
                 var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
-                var elements = driver.FindElements(elementLocator);
+                var elements = driver.FindElements(elementLocator.Item2);
                 if (elements.Count == 0)
                 {
                     throw new NoSuchElementException(
@@ -240,15 +261,47 @@ namespace FacebookAutomation
                 element.Click();
                 wait.Until(ExpectedConditions.ElementToBeClickable(element));
             }
-            catch (NoSuchElementException e)
-            {
-                this.logger.LogError("Element with locator: '" + elementLocator + "' was not found. Exception.Message: " + e.Message);
-                throw;
-            }
             catch (Exception e)
             {
-                this.logger.LogError(e.ToString());
+                this.logger.LogError(GetLogMessage(e, elementLocator));
+                return false;
             }
+
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+            return true;
+        }
+
+        private string GetLogMessage(Exception e, Tuple<string, By> elementLocator)
+        {
+            var message = e.Message + Environment.NewLine;
+            message += "Locator not found: '" + elementLocator.Item1 + Environment.NewLine;
+            message += "Locator criteria:" + elementLocator.Item2.Criteria;
+            return message;
+        }
+
+        /// <summary>
+        /// Repeat the function call up to repeatCountTimes.
+        /// </summary>
+        /// <param name="repeatCount">Don't set it higher than 3</param>
+        /// <param name="function">This function s called</param>
+        /// <param name="driver">Function argument 1</param>
+        /// <param name="elementSelector">Function argument 2</param>
+        /// <param name="timeout">Function argument 3</param>
+        /// <returns></returns>
+        private bool RepeatFunction(Func<IWebDriver, Tuple<string, By>, int, bool> function, 
+                                    IWebDriver driver, 
+                                    Tuple<string, By> elementSelector, 
+                                    int timeout = 10,
+                                    int repeatCount = 2)
+        {
+            var counter = 0;
+            var result = false;
+            while (counter < repeatCount && result != true)
+            {
+                result = function(driver, elementSelector, timeout);
+                counter++;
+            }
+            return result;
         }
 
         /// <summary>
@@ -259,6 +312,8 @@ namespace FacebookAutomation
             this.webDriver.Close();
             this.webDriver.Quit();
         }
+
+
 
         /// <summary>
         /// Not yet in use, but it works.
