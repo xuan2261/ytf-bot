@@ -211,5 +211,15 @@ namespace Common
         {
             return Path.Combine(workDir, channelId);
         }
+
+        /// <summary>
+        /// Returns the full file path to video.
+        /// </summary>
+        /// <param name="workingDirectory">Working directory.</param>
+        /// <returns></returns>
+        public string GetFullPathToVideo(string workingDirectory)
+        {
+            return Path.Combine(GetChannelSubDir(workingDirectory, ChannelId), Id, $".{VideoFileSearchPattern}");
+        }
     }
 }
