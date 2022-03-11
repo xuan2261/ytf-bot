@@ -15,8 +15,8 @@ var serviceWorkDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Servic
 myLogger.LogInfo("Start Telegram Worker");
 var telegramManager = new TelegramManager(completeServiceConfig.TelegramConfig, VideoMetaDataFull.VideoFileSearchPattern, serviceWorkDir);
 //_ = telegramManager.StartSomeBotToHaufenChat();
-//_ = telegramManager.StartBlackMetaloidToBmChat();
-//_ = telegramManager.StartGermanBlackMetaloidToGbmChat();
+_ = telegramManager.StartBlackMetaloidToBmChat();
+_ = telegramManager.StartGermanBlackMetaloidToGbmChat();
 
 myLogger.LogInfo("Star Facebook Worker");
 var fbManager = new FbManager(serviceWorkDir, completeServiceConfig.FacebookConfig, MyCallback);

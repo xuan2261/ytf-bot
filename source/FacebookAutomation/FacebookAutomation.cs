@@ -139,7 +139,7 @@ namespace FacebookAutomation
         /// <summary>
         /// Synchronous method to publish textual content into a Facebook group.
         /// </summary>
-        public bool PublishTextContentInFaceBookGroup(Group fbGroup, string textToPublish)
+        public bool PublishToGroup(Group fbGroup, string textToPublish)
         {
             try
             {
@@ -186,6 +186,15 @@ namespace FacebookAutomation
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Make sure this method to be called, use the ctor of this class in a "using block".
+        /// </summary>
+        public void Dispose()
+        {
+            this.webDriver.Close();
+            this.webDriver.Quit();
         }
 
         /// <summary>
@@ -303,17 +312,6 @@ namespace FacebookAutomation
             }
             return result;
         }
-
-        /// <summary>
-        /// Make sure this method to be called, use the ctor of this class in a "using block".
-        /// </summary>
-        public void Dispose()
-        {
-            this.webDriver.Close();
-            this.webDriver.Quit();
-        }
-
-
 
         /// <summary>
         /// Not yet in use, but it works.

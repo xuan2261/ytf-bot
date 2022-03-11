@@ -62,10 +62,10 @@ namespace FacebookAutomation
                            {
                                while (this.fbWorkerShallRun_01)
                                {
-                                   SendVideoDataIntoGroupsAsync(this.listOfProcessedFilesWorker01,
-                                                                     400,
-                                                                     this.facebookConfig.TestGroups,
-                                                                     false).Wait();
+                                   SendVideoDataIntoGroups(this.listOfProcessedFilesWorker01,
+                                                           400,
+                                                           this.facebookConfig.TaskGroups_01,
+                                                           false);
                                    Thread.Sleep(GetSleepTime());
                                }
                            });
@@ -92,49 +92,40 @@ namespace FacebookAutomation
         /// <param name="sizeOfFile">Size of file in lines</param>
         /// <param name="faceBookGroups">The FB groups to send in.</param>
         /// <returns></returns>
-        public async Task SendVideoDataIntoGroupsAsync(string pathToProcessedFiles,
-                                                       int sizeOfFile,
-                                                       List<Group> faceBookGroups,
-                                                       bool gaymanSensitive = false)
+        public void SendVideoDataIntoGroups(string pathToProcessedFiles,
+                                            int sizeOfFile,
+                                            List<Group> faceBookGroups,
+                                            bool gaymanSensitive = false)
         {
             try
             {
-                var offsetSecs = 30;
-                var secsPerGroup = 30;
 
-                await Task.Run(() =>
-                {
-                    // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
-                    // It is probably not necessary to secure this process with a mutex, because each bot must manage
-                    // its own list of already processed files.
-                    var notYetProcessed =
-                        FileHandling.FindNotYetProcessedVideoIdFiles(pathToProcessedFiles,
-                                                                     this.WorkDir,
-                                                                     VideoMetaDataFull.VideoFileSearchPattern);
-                    
-                    var videos = VideoMetaDataFull.DeserializeFiles(notYetProcessed, out var filesNotFound);
-                    filesNotFound.ForEach(file => this.logger.LogWarning($"{file} not found"));
+                // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
+                // It is probably not necessary to secure this process with a mutex, because each bot must manage
+                // its own list of already processed files.
+                var notYetProcessed =
+                    FileHandling.FindNotYetProcessedVideoIdFiles(pathToProcessedFiles,
+                                                                 this.WorkDir,
+                                                                 VideoMetaDataFull.VideoFileSearchPattern);
 
-                    videos.ForEach(video =>
+                var videos = VideoMetaDataFull.DeserializeFiles(notYetProcessed, out var filesNotFound);
+                filesNotFound.ForEach(file => this.logger.LogWarning($"{file} not found"));
+
+                videos.ForEach(video =>
+                               {
+                                   var successfulSends = SendVideoToGroups(video, faceBookGroups, gaymanSensitive);
+                                   if (successfulSends == 0)
                                    {
+                                       this.logger.LogError($"{video.Title} couldn't be sent. Worker file: {pathToProcessedFiles} ");
+                                   }
+                                   else
+                                   {
+                                       this.logger.LogInfo($"{video.Title} successfully sent. Worker file: {pathToProcessedFiles} ");
+                                       FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(pathToProcessedFiles, notYetProcessed);
+                                       FileHandling.TrimFileListOfProcessedFile(pathToProcessedFiles, sizeOfFile);
+                                   }
+                               });
 
-                                   });
-
-                    
-                    
-                    if (notYetProcessed.Count > 0)
-                    {
-                        if (SendVideoMetaDataToGroups(notYetProcessed, faceBookGroups, gaymanSensitive))
-                        {
-                            FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(pathToProcessedFiles, notYetProcessed);
-                            FileHandling.TrimFileListOfProcessedFile(pathToProcessedFiles, sizeOfFile);
-                        }
-                        else
-                        {
-                            this.logger.LogError("Timeout in SomeBotToHaufenChatTaskAsync. Don't just stand there, kill something!");
-                        }
-                    }
-                });
             }
             catch (Exception e)
             {
@@ -142,66 +133,41 @@ namespace FacebookAutomation
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="notYetProcessed"></param>
-        /// <param name="fbGroups"></param>
-        /// <param name="gaymanSensitive"></param>
-        /// <returns></returns>
-        public void SendVideoMetaDataToGroups(List<string> notYetProcessed,
-                                              List<Group> fbGroups,
-                                              bool gaymanSensitive = false)
+        public int SendVideoToGroups(VideoMetaDataFull video, List<Group> fbGroups, bool gaymanSensitive)
         {
-            try
-            {
-                var videoDates = VideoMetaDataFull.DeserializeFiles(notYetProcessed, out var filesNotFound);
-                filesNotFound.ForEach(file => this.logger.LogWarning($"{file} not found"));
+            var result = 0;
+            var fbAuto = new FacebookAutomation(this.WorkDir, this.logger);
+            fbAuto.Login(this.facebookConfig.Email, this.facebookConfig.Pw);
 
-                if (videoDates.Count > 0)
-                {
-                    var fbAuto = new FacebookAutomation(this.WorkDir, this.logger);
-                    fbAuto.Login(this.facebookConfig.Email, this.facebookConfig.Pw);
+            fbGroups.ForEach(group =>
+                             {
+                                 var msg = " posted video: " + video.Title;
+                                 msg += " in FB group: " + group.GroupName;
 
-                    fbGroups.ForEach(group =>
+                                 var fbDescription = video.GetFacebookDescription();
+
+                                 if (gaymanSensitive)
+                                 {
+                                     if (video.IsGerman())
                                      {
-                                         videoDates.ForEach(video =>
-                                                            {
-                                                                var msg = " posted video: " + video.Title;
-                                                                msg += " in group: " + group.GroupName;
+                                         if (InternalPublish(fbAuto, group, fbDescription, msg)) result++;
+                                     }
+                                 }
+                                 else
+                                 {
+                                     if (InternalPublish(fbAuto, group, fbDescription, msg)) result++;
+                                 }
+                             });
+            fbAuto.Dispose();
 
-                                                                var fbDescription = video.GetFacebookDescription();
-
-                                                                if (gaymanSensitive)
-                                                                {
-                                                                    if (video.IsGerman())
-                                                                    {
-                                                                        InternalPublish(fbAuto, group,  fbDescription, msg);
-                                                                    }
-                                                                }
-                                                                else
-                                                                {
-                                                                    InternalPublish(fbAuto, group, fbDescription, msg);
-                                                                }
-                                                            });
-
-                                     });
-                    fbAuto.Dispose();
-                }
-
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError(e.Message);
-            }
+            return result;
         }
 
         private bool InternalPublish(FacebookAutomation fbAuto, Group theGroup, string description, string message)
         {
             bool result = false;
             string msg, logInfo;
-            if (fbAuto.PublishTextContentInFaceBookGroup(theGroup,
-                                                         description))
+            if (fbAuto.PublishToGroup(theGroup, description))
             {
                 result = true;
                 msg = "Successful " + message;
