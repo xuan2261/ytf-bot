@@ -25,6 +25,15 @@ namespace FacebookAutomation
 
         [JsonPropertyName("taskGroups_01")]
         public List<Group> TaskGroups_01 { get; set; }
+
+        [JsonPropertyName("taskGroups_Gayman")]
+        public List<Group> TaskGroups_Gayman { get; set; }
+
+        [JsonPropertyName("taskGroups_SchwuchtelGruppen")]
+        public List<Group> TaskGroups_SchwuchtelGruppen { get; set; }
+
+        [JsonPropertyName("taskGroups_DSBM")]
+        public List<Group> TaskGroups_DSBM { get; set; }
     }
 
 }

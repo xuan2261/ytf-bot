@@ -21,6 +21,7 @@ _ = telegramManager.StartGermanBlackMetaloidToGbmChat();
 myLogger.LogInfo("Star Facebook Worker");
 var fbManager = new FbManager(serviceWorkDir, completeServiceConfig.FacebookConfig, MyCallback);
 _ = fbManager.StartFbWorker01();
+//_ = fbManager.StartGaymanWorker();
 
 myLogger.LogInfo("Start Youtube Worker");
 var youtubeApi = new YoutubeApi.YoutubeApi(completeServiceConfig.YoutubeConfig.ApiKey4Testing, serviceWorkDir);

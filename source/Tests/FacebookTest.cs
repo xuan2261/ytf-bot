@@ -61,14 +61,12 @@ namespace Tests
             VideoMetaDataFull.SerializeToFileInSubfolder(secondVideo, WorkFolder);
             var pathToListFile = Path.Combine(WorkFolder, "__TheTestListFile.list");
             File.WriteAllText(pathToListFile, string.Empty);
-            var listOfFileNames = FileHandling.FindNotYetProcessedVideoIdFiles(pathToListFile, WorkFolder, VideoMetaDataFull.VideoFileSearchPattern);
 
             var logger = new Logger("TestFacebookLogFile.log");
             var facebookConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").FacebookConfig;
             
             var fbManager = new FbManager(WorkFolder, facebookConfig);
-            
-            //fbManager.SendVideoDataIntoGroups(listOfFileNames, facebookConfig.TestGroups.Take(2).ToList(), false);
+            fbManager.PrepareAndSendToGroups(pathToListFile, facebookConfig.TestGroups.Take(2).ToList(), false);
         }
 
         /// <summary>
@@ -84,18 +82,15 @@ namespace Tests
             var secondVideo = GetVideometaData("0B_0HWfG96I");
             VideoMetaDataFull.SerializeToFileInSubfolder(firstVideo, WorkFolder);
             VideoMetaDataFull.SerializeToFileInSubfolder(secondVideo, WorkFolder);
+            
             var logger = new Logger("TestFacebookLogFile.log");
-
             var facebookConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").FacebookConfig;
 
-            // First 2 groups
-        //    var pathToListFile1 = Path.Combine(WorkFolder, "__TheTestListFile_01.list");
-        //    File.WriteAllText(pathToListFile1, string.Empty);
-        //    var listOfFileNames1 = FileHandling.FindNotYetProcessedVideoIdFiles(pathToListFile1, WorkFolder, VideoMetaDataFull.VideoFileSearchPattern);
-        //    var fbManager1 = new FbManager(WorkFolder, facebookConfig);
-        //    tasks.Add(fbManager1.SendVideoMetaDataToGroupsAsync(listOfFileNames1, facebookConfig.TestGroups, false));
-
-        //    Task.WaitAll(tasks.ToArray());
+            // Publish two videos in 4 groups
+            var pathToListFile1 = Path.Combine(WorkFolder, "__TheTestListFile_01.list");
+            File.WriteAllText(pathToListFile1, string.Empty);
+            var fbManager1 = new FbManager(WorkFolder, facebookConfig);
+            fbManager1.PrepareAndSendToGroups(pathToListFile1, facebookConfig.TestGroups, false);
         }
     }
 }

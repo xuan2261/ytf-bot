@@ -86,16 +86,26 @@ namespace Tests
             };
         }
 
+        private static Channel GetBMPChannel()
+        {
+            return new Channel
+                   {
+                       ChannelId = "UCzCWehBejA23yEz3zp7jlcg",
+                       ChannelUploadsPlayListId = "UUzCWehBejA23yEz3zp7jlcg",
+                       ChannelName = "Black Metal Promotion"
+                   };
+        }
+
         /// <summary>
         /// Test for GetFullVideoMetaDataOfChannelAsync
         /// </summary>
         [TestMethod]
         public void CheckThatSpecialVictimsChannel()
         {
-            Channel victimChannel = GetVictimTestChannel();
+            Channel channel = GetBMPChannel();
             var youtubeApi = SetUpTest(out Logger localLogger);
 
-            var theTaskBaby = youtubeApi.GetFullVideoMetaDataOfChannelAsync(victimChannel, 10);
+            var theTaskBaby = youtubeApi.GetFullVideoMetaDataOfChannelAsync(channel, 10);
             theTaskBaby.Wait();
             var listOfVideos = theTaskBaby.Result;
             Assert.AreEqual(listOfVideos.Count, 10);

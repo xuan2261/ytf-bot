@@ -46,7 +46,12 @@ namespace FacebookAutomation
         // xpath selector to find element that opens the post to group dialog
         private static readonly Tuple<string, By> OpenPostToGroupDialogSelector =
             new(nameof(OpenPostToGroupDialogSelector),
-                By.XPath("//div[@data-pagelet='GroupInlineComposer'] //span[contains(.,'Schreib etwas') and contains(@style,'webkit-box')]"));
+                By.XPath("//div[@data-pagelet='GroupInlineComposer'] //span[(contains(.,'Schreib etwas') or contains(., 'Was machst du gerade')) and contains(@style,'webkit-box')]"));
+
+        private static readonly Tuple<string, By> OpenPostToProfileDialogSelector =
+            new(nameof(OpenPostToGroupDialogSelector),
+                By.XPath("//div[@data-pagelet='ProfileComposer'] //span[contains(., 'Was machst du gerade') and contains(@style,'webkit-box')]"));
+
 
         // xpath selector to find button post to group
         private static readonly Tuple<string, By> PostToGroupButtonSelector =
@@ -134,6 +139,12 @@ namespace FacebookAutomation
                 this.logger.LogError("Error while Login. ExceptionMessage: " + e.Message);
                 throw;
             }
+        }
+
+        public bool PublishToProfile(string textToPublish)
+        {
+            // TODO: Implementiere mich!
+            return false;
         }
 
         /// <summary>

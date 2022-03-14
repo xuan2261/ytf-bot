@@ -13,8 +13,8 @@ namespace FacebookAutomation
     public class FbManager
     {
         private readonly Logger logger;
-        private readonly string listOfProcessedFilesWorker01;
-        private bool fbWorkerShallRun_01;
+        private readonly string listOfProcessedFilesWorker01, list_Gayman, list_Schwuchteln, list_DSBM;
+        private bool workersRun;
         private readonly Action<string, string> sendDebugMessage;
         private readonly FacebookConfig facebookConfig;
 
@@ -42,6 +42,9 @@ namespace FacebookAutomation
             }
 
             this.listOfProcessedFilesWorker01 = Path.Combine(this.WorkDir, $"__FaceBookWorker_01.list");
+            this.list_Gayman = Path.Combine(this.WorkDir, $"__{nameof(this.list_Gayman)}.list");
+            this.list_Schwuchteln = Path.Combine(this.WorkDir, $"__{nameof(this.list_Schwuchteln)}.list");
+            this.list_DSBM = Path.Combine(this.WorkDir, $"__{nameof(this.list_DSBM)}.list");
             this.facebookConfig = fbConfig;
         }
 
@@ -51,21 +54,33 @@ namespace FacebookAutomation
         /// </summary>
         public void StopAllWorker()
         {
-            this.fbWorkerShallRun_01 = false;
+            this.workersRun = false;
             this.logger.LogWarning("All Facebook workers are in standby now.");
         }
 
         public async Task StartFbWorker01()
         {
-            this.fbWorkerShallRun_01 = true;
+            this.workersRun = true;
             await Task.Run(() =>
                            {
-                               while (this.fbWorkerShallRun_01)
+                               while (this.workersRun)
                                {
-                                   SendVideoDataIntoGroups(this.listOfProcessedFilesWorker01,
-                                                           400,
-                                                           this.facebookConfig.TaskGroups_01,
-                                                           false);
+                                   PrepareAndSendToGroups(this.listOfProcessedFilesWorker01,
+                                                          this.facebookConfig.TaskGroups_01);
+                                   Thread.Sleep(GetSleepTime());
+                               }
+                           });
+        }
+
+        public async Task StartGaymanWorker()
+        {
+            this.workersRun = true;
+            await Task.Run(() =>
+                           {
+                               while (this.workersRun)
+                               {
+                                   PrepareAndSendToGroups(this.list_Gayman,
+                                                          this.facebookConfig.TestGroups);
                                    Thread.Sleep(GetSleepTime());
                                }
                            });
@@ -89,17 +104,17 @@ namespace FacebookAutomation
         /// 4 Trim the file within the processed file names
         /// </summary>
         /// <param name="pathToProcessedFiles">Path to the file that contains the names and pathes of the processed videos.</param>
-        /// <param name="sizeOfFile">Size of file in lines</param>
         /// <param name="faceBookGroups">The FB groups to send in.</param>
+        /// <param name="specialSensitive">Diese Deutschen sind zum Teil sehr spezielle Exemplare der menschlichen Gattung. Das zeigt sich an vielen
+        /// Stellen im echten und virtuellen Leben. FB-Gruppen, die nur Posts mit deutschen Projekten zulassen, sind dabei beinahe noch erträglich.
+        /// Aber lassen wir das. Ist dieser Schalter aktiv, werden ausschließlich "deutsche" Videos in Gruppen veröffentlicht.</param>
         /// <returns></returns>
-        public void SendVideoDataIntoGroups(string pathToProcessedFiles,
-                                            int sizeOfFile,
-                                            List<Group> faceBookGroups,
-                                            bool gaymanSensitive = false)
+        public void PrepareAndSendToGroups(string pathToProcessedFiles,
+                                           List<Group> faceBookGroups,
+                                           bool specialSensitive = false)
         {
             try
             {
-
                 // This has to be synchronised because it is a coherent process and the individual steps are interdependent.
                 // It is probably not necessary to secure this process with a mutex, because each bot must manage
                 // its own list of already processed files.
@@ -111,9 +126,15 @@ namespace FacebookAutomation
                 var videos = VideoMetaDataFull.DeserializeFiles(notYetProcessed, out var filesNotFound);
                 filesNotFound.ForEach(file => this.logger.LogWarning($"{file} not found"));
 
+                if (specialSensitive)
+                {
+                    DoSpecialGermanShit();
+                    return;
+                }
+
                 videos.ForEach(video =>
                                {
-                                   var successfulSends = SendVideoToGroups(video, faceBookGroups, gaymanSensitive);
+                                   var successfulSends = SendVideoToGroups(video, faceBookGroups);
                                    if (successfulSends == 0)
                                    {
                                        this.logger.LogError($"{video.Title} couldn't be sent. Worker file: {pathToProcessedFiles} ");
@@ -121,11 +142,13 @@ namespace FacebookAutomation
                                    else
                                    {
                                        this.logger.LogInfo($"{video.Title} successfully sent. Worker file: {pathToProcessedFiles} ");
-                                       FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(pathToProcessedFiles, notYetProcessed);
-                                       FileHandling.TrimFileListOfProcessedFile(pathToProcessedFiles, sizeOfFile);
+
+                                       // This may seem a little awkward. Each video is thus added individually to this list of processed files.
+                                       FileHandling.AppendFilePathsToProcessedFilesList(pathToProcessedFiles, 
+                                                                                        new List<string> { video.GetFullPathToVideo(this.WorkDir) });
                                    }
                                });
-
+                FileHandling.TrimFileListOfProcessedFile(pathToProcessedFiles);
             }
             catch (Exception e)
             {
@@ -133,7 +156,23 @@ namespace FacebookAutomation
             }
         }
 
-        public int SendVideoToGroups(VideoMetaDataFull video, List<Group> fbGroups, bool gaymanSensitive)
+        /// <summary>
+        /// 
+        /// </summary>
+        public void DoSpecialGermanShit()
+        {
+
+        }
+
+
+        /// <summary>
+        /// Here and in the internally called method, the video is ultimately posted to the Facebook groups passed.
+        /// A loop goes sequentially and in the same thread through all groups and publishes the post.
+        /// </summary>
+        /// <param name="video">This will be published.</param>
+        /// <param name="fbGroups">In these groups it will be published.</param>
+        /// <returns></returns>
+        public int SendVideoToGroups(VideoMetaDataFull video, List<Group> fbGroups)
         {
             var result = 0;
             var fbAuto = new FacebookAutomation(this.WorkDir, this.logger);
@@ -143,20 +182,8 @@ namespace FacebookAutomation
                              {
                                  var msg = " posted video: " + video.Title;
                                  msg += " in FB group: " + group.GroupName;
-
                                  var fbDescription = video.GetFacebookDescription();
-
-                                 if (gaymanSensitive)
-                                 {
-                                     if (video.IsGerman())
-                                     {
-                                         if (InternalPublish(fbAuto, group, fbDescription, msg)) result++;
-                                     }
-                                 }
-                                 else
-                                 {
-                                     if (InternalPublish(fbAuto, group, fbDescription, msg)) result++;
-                                 }
+                                 if (InternalPublish(fbAuto, group, fbDescription, msg)) result++;
                              });
             fbAuto.Dispose();
 

@@ -191,7 +191,7 @@ namespace TelegramApi
                                        if (SendVideoMetaDataToChatAsync(notYetProcessed, theBot, theChat, gaymanSensitive)
                                            .Wait(TimeSpan.FromSeconds(5 + notYetProcessed.Count * 2)))
                                        {
-                                           FileHandling.WriteProcessedFileNamesIntoListOfProcessedFiles(pathToProcessedFiles, notYetProcessed);
+                                           FileHandling.AppendFilePathsToProcessedFilesList(pathToProcessedFiles, notYetProcessed);
                                            FileHandling.TrimFileListOfProcessedFile(pathToProcessedFiles, sizeOfFile);
                                        }
                                        else

@@ -63,11 +63,12 @@
         }
 
         /// <summary>
-        /// This method writes the list of the names of the files that have been processed to the log file pathToListOfProcessedFiles.
+        /// This method writes the list of the names of the files that have been processed to the file within the processed files
+        /// 'pathToListOfProcessedFiles".
         /// </summary>
-        /// <param name="pathToListOfProcessedFiles"></param>
-        /// <param name="newProcessedFiles"></param>
-        public static void WriteProcessedFileNamesIntoListOfProcessedFiles(string pathToListOfProcessedFiles, List<string> newProcessedFiles)
+        /// <param name="pathToListOfProcessedFiles">Full path to the list of processed file names.</param>
+        /// <param name="newProcessedFiles">List of file names that have been successfully processed.</param>
+        public static void AppendFilePathsToProcessedFilesList(string pathToListOfProcessedFiles, List<string> newProcessedFiles)
         {
             if (newProcessedFiles.Count > 0)
             {
@@ -80,8 +81,8 @@
         /// Yes, this is so inefficient.
         /// </summary>
         /// <param name="pathToListOfProcessedFiles">Full path to file</param>
-        /// <param name="maxEntries">Maximum file names listed in this file</param>
-        public static void TrimFileListOfProcessedFile(string pathToListOfProcessedFiles, int maxEntries)
+        /// <param name="maxEntries">Maximum file names listed in this file. Default is 500.</param>
+        public static void TrimFileListOfProcessedFile(string pathToListOfProcessedFiles, int maxEntries = 500)
         {
             var lines = File.ReadAllLines(pathToListOfProcessedFiles);
             if (lines.Length > maxEntries)
