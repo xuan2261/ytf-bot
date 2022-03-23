@@ -80,7 +80,8 @@ namespace FacebookAutomation
                                while (this.workersRun)
                                {
                                    PrepareAndSendToGroups(this.list_Gayman,
-                                                          this.facebookConfig.TestGroups);
+                                                          this.facebookConfig.TestGroups,
+                                                          true);
                                    Thread.Sleep(GetSleepTime());
                                }
                            });
@@ -97,13 +98,14 @@ namespace FacebookAutomation
 
         /// <summary>
         /// Method executes a task and send messages into theChat by using theBot.
+        /// TODO Kommentar anpassen
         /// This task has 4 subtasks:
-        /// 1 Find not yet processed youtube meta files
-        /// 2 Send not yet processed files in the chat theChat
-        /// 3 Update file with processed files
-        /// 4 Trim the file within the processed file names
+        /// 1 Find not yet processed youtube meta files and a list of video meta data objects out of it
+        /// 2 Call SendVideoToGroups for each video meta data object.
+        ///    --> This methods does "Update file with processed files" internally
+        /// 3 Trim the file within the processed file names
         /// </summary>
-        /// <param name="pathToProcessedFiles">Path to the file that contains the names and pathes of the processed videos.</param>
+        /// <param name="pathToProcessedFiles">Path to the file that contains the names and paths of the processed videos.</param>
         /// <param name="faceBookGroups">The FB groups to send in.</param>
         /// <param name="specialSensitive">Diese Deutschen sind zum Teil sehr spezielle Exemplare der menschlichen Gattung. Das zeigt sich an vielen
         /// Stellen im echten und virtuellen Leben. FB-Gruppen, die nur Posts mit deutschen Projekten zulassen, sind dabei beinahe noch erträglich.
@@ -128,25 +130,13 @@ namespace FacebookAutomation
 
                 if (specialSensitive)
                 {
-                    DoSpecialGermanShit();
+                    DoSpecialGermanShit(pathToProcessedFiles, videos, faceBookGroups);
                     return;
                 }
 
                 videos.ForEach(video =>
                                {
-                                   var successfulSends = SendVideoToGroups(video, faceBookGroups);
-                                   if (successfulSends == 0)
-                                   {
-                                       this.logger.LogError($"{video.Title} couldn't be sent. Worker file: {pathToProcessedFiles} ");
-                                   }
-                                   else
-                                   {
-                                       this.logger.LogInfo($"{video.Title} successfully sent. Worker file: {pathToProcessedFiles} ");
-
-                                       // This may seem a little awkward. Each video is thus added individually to this list of processed files.
-                                       FileHandling.AppendFilePathsToProcessedFilesList(pathToProcessedFiles, 
-                                                                                        new List<string> { video.GetFullPathToVideo(this.WorkDir) });
-                                   }
+                                   SendVideoToGroups(video, faceBookGroups, pathToProcessedFiles);
                                });
                 FileHandling.TrimFileListOfProcessedFile(pathToProcessedFiles);
             }
@@ -157,11 +147,27 @@ namespace FacebookAutomation
         }
 
         /// <summary>
-        /// 
+        /// 1 Call SendVideoToGroups for each video meta data object.
+        ///    --> This methods does "Update file with processed files" internally
+        ///        or its no german video, so "Update file with processed files" is done in here.
+        /// 2 Trim the file within the processed file names
         /// </summary>
-        public void DoSpecialGermanShit()
+        public void DoSpecialGermanShit(string pathToProcessedFiles, List<VideoMetaDataFull> videos, List<Group> faceBookGroups)
         {
-
+            videos.ForEach(video =>
+                           {
+                               if (video.IsGerman())
+                               {
+                                   SendVideoToGroups(video, faceBookGroups, pathToProcessedFiles);
+                               }
+                               else
+                               {
+                                   // If not german add it to the list for avoiding processing a second time
+                                   FileHandling.AppendFilePathsToProcessedFilesList(pathToProcessedFiles,
+                                                                                    new List<string> { video.GetFullPathToVideo(this.WorkDir) });
+                               }
+                           });
+            FileHandling.TrimFileListOfProcessedFile(pathToProcessedFiles);
         }
 
 
@@ -171,8 +177,9 @@ namespace FacebookAutomation
         /// </summary>
         /// <param name="video">This will be published.</param>
         /// <param name="fbGroups">In these groups it will be published.</param>
+        /// <param name="pathToProcessedFiles">Path to the file that contains the names and paths of the processed videos.</param>
         /// <returns></returns>
-        public int SendVideoToGroups(VideoMetaDataFull video, List<Group> fbGroups)
+        public void SendVideoToGroups(VideoMetaDataFull video, List<Group> fbGroups, string pathToProcessedFiles)
         {
             var result = 0;
             var fbAuto = new FacebookAutomation(this.WorkDir, this.logger);
@@ -187,24 +194,44 @@ namespace FacebookAutomation
                              });
             fbAuto.Dispose();
 
-            return result;
+            if (result == 0)
+            {
+                this.logger.LogError($"{video.Title} couldn't be sent. Worker file: {pathToProcessedFiles} ");
+            }
+            else
+            {
+                this.logger.LogInfo($"{video.Title} successfully sent. Worker file: {pathToProcessedFiles} ");
+
+                // This may seem a little awkward. Each video is thus added individually to this list of processed files.
+                FileHandling.AppendFilePathsToProcessedFilesList(pathToProcessedFiles,
+                                                                 new List<string> { video.GetFullPathToVideo(this.WorkDir) });
+            }
         }
 
-        private bool InternalPublish(FacebookAutomation fbAuto, Group theGroup, string description, string message)
+        /// <summary>
+        /// The method mainly regulates sufficiently detailed logging. The method mainly regulates sufficiently detailed logging. 
+        /// Before this method is called, logging in must be completed successfully.
+        /// </summary>
+        /// <param name="fbAuto">Handle on logged in FB automation</param>
+        /// <param name="theGroup">Group to send the publicationMessage</param>
+        /// <param name="publicationMessage">Message to publish in Facebook group</param>
+        /// <param name="logMessage">Message to log.</param>
+        /// <returns></returns>
+        private bool InternalPublish(FacebookAutomation fbAuto, Group theGroup, string publicationMessage, string logMessage)
         {
             bool result = false;
             string msg, logInfo;
-            if (fbAuto.PublishToGroup(theGroup, description))
+            if (fbAuto.PublishToGroup(theGroup, publicationMessage))
             {
                 result = true;
-                msg = "Successful " + message;
+                msg = "Successful " + logMessage;
                 logInfo = "INFO  ***";
                 this.logger.LogInfo(msg);
             }
             else
             {
                 result = false;
-                msg = "Error. Not " + message;
+                msg = "Error. Not " + logMessage;
                 logInfo = "ERROR ***";
                 this.logger.LogError(msg);
             }

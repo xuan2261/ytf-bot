@@ -78,8 +78,8 @@ namespace Tests
         public void TestFbManagerSendVideoMetaDataTo4GroupsAsync()
         {
             FileHandlingTest.SetupTest(WorkFolder);
-            var firstVideo = GetVideometaData("ZWHBsKm9Egk");
-            var secondVideo = GetVideometaData("0B_0HWfG96I");
+            var firstVideo = GetVideometaData("ZWHBsKm9Egk"); // german video
+            var secondVideo = GetVideometaData("a3rjfQDqQx8");
             VideoMetaDataFull.SerializeToFileInSubfolder(firstVideo, WorkFolder);
             VideoMetaDataFull.SerializeToFileInSubfolder(secondVideo, WorkFolder);
             
@@ -90,7 +90,7 @@ namespace Tests
             var pathToListFile1 = Path.Combine(WorkFolder, "__TheTestListFile_01.list");
             File.WriteAllText(pathToListFile1, string.Empty);
             var fbManager1 = new FbManager(WorkFolder, facebookConfig);
-            fbManager1.PrepareAndSendToGroups(pathToListFile1, facebookConfig.TestGroups, false);
+            fbManager1.PrepareAndSendToGroups(pathToListFile1, facebookConfig.TestGroups, true);
         }
     }
 }

@@ -219,7 +219,7 @@ namespace Common
         /// <returns></returns>
         public string GetFullPathToVideo(string workingDirectory)
         {
-            return Path.Combine(GetChannelSubDir(workingDirectory, ChannelId), Id, $".{VideoFileSearchPattern}");
+            return Path.Combine(GetChannelSubDir(workingDirectory, ChannelId), $"{Id}.{VideoFileSearchPattern}");
         }
     }
 }
