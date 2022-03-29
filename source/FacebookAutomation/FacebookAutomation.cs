@@ -48,10 +48,10 @@ namespace FacebookAutomation
             new(nameof(OpenPostToGroupDialogSelector),
                 By.XPath("//div[@data-pagelet='GroupInlineComposer'] //span[(contains(.,'Schreib etwas') or contains(., 'Was machst du gerade')) and contains(@style,'webkit-box')]"));
 
+        // xpath selector to find element that opens the dialog to post on your own site
         private static readonly Tuple<string, By> OpenPostToProfileDialogSelector =
             new(nameof(OpenPostToGroupDialogSelector),
                 By.XPath("//div[@data-pagelet='ProfileComposer'] //span[contains(., 'Was machst du gerade') and contains(@style,'webkit-box')]"));
-
 
         // xpath selector to find button post to group
         private static readonly Tuple<string, By> PostToGroupButtonSelector =
@@ -59,10 +59,17 @@ namespace FacebookAutomation
                 By.XPath("//div[@aria-label='Posten' and @role='button']"));
 
         // xpath selector for youtube preview box in that dialog for publishing contents in a group
-        private static readonly Tuple<string, By> XPathSelectorYoutubePreviewBox =
-            new(nameof(XPathSelectorYoutubePreviewBox),
+        private static readonly Tuple<string, By> YoutubePreviewBoxSelector =
+            new(nameof(YoutubePreviewBoxSelector),
                 By.XPath("//a[@role='link' and @target='_blank' and contains(.,'youtube')]"));
 
+        // selector to find the textbox for searching group members
+        private static readonly Tuple<string, By> FindGroupMemberSelector =
+            new(nameof(FindGroupMemberSelector),
+                By.XPath("//label //input[contains(@placeholder, 'Ein Mitglied finden') and contains(@type,'text')]"));
+
+        //
+        // //div //span //span //a[@aria-label and contains(@href,'/groups/430861494657177/user')]
         // beinhaltet link, findet so aber 2 Elemente
         //a[@role='link' and @target='_blank' and contains(@href,'youtube') and contains(@href,'PyAexdhNXjY')] 
 
@@ -94,7 +101,7 @@ namespace FacebookAutomation
                 var options = new ChromeOptions();
                 options.AddArgument("--disable-notifications");
                 options.AddArgument("--window-size=1500,1200");
-                options.AddArgument("--headless");
+                options.AddArgument("--headless"); // makes the browser invisibly running in the background
                 options.AddExcludedArgument("enable-logging");
 
                 this.webDriver = new ChromeDriver(options);
@@ -180,7 +187,7 @@ namespace FacebookAutomation
                 sendKeysAction.Perform();
 
                 // Wait for youtube preview box to appear
-                if (!RepeatFunction(WaitForElementToAppear, this.webDriver, XPathSelectorYoutubePreviewBox))
+                if (!RepeatFunction(WaitForElementToAppear, this.webDriver, YoutubePreviewBoxSelector))
                 {
                     return false;
                 }
@@ -196,6 +203,23 @@ namespace FacebookAutomation
                 this.logger.LogError(e.Message);
                 return false;
             }
+            return true;
+        }
+
+        public bool UpdateUserDataBase(Group fbGroup)
+        {
+            // Navigate to group members
+            // https://www.facebook.com/groups/{group_ID}/members
+            this.webDriver.Url = $"https://www.facebook.com/groups/{fbGroup.GroupId}/members";
+
+            // Wait until that post to group thing was hung into the dom
+            if (!RepeatFunction(WaitForElementToAppear, this.webDriver, FindGroupMemberSelector))
+            {
+                return false;
+            }
+
+
+
             return true;
         }
 
