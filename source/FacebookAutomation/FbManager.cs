@@ -152,7 +152,7 @@ namespace FacebookAutomation
         ///        or its no german video, so "Update file with processed files" is done in here.
         /// 2 Trim the file within the processed file names
         /// </summary>
-        public void DoSpecialGermanShit(string pathToProcessedFiles, List<VideoMetaDataFull> videos, List<Group> faceBookGroups)
+        private void DoSpecialGermanShit(string pathToProcessedFiles, List<VideoMetaDataFull> videos, List<Group> faceBookGroups)
         {
             videos.ForEach(video =>
                            {

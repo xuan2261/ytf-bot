@@ -1,6 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Text.Unicode;
 using System.Threading;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
@@ -34,7 +39,7 @@ namespace FacebookAutomation
         // https://www.guru99.com/using-contains-sbiling-ancestor-to-find-element-in-selenium.html#:~:text=contains()%20in%20Selenium%20is,()%20function%20throughout%20the%20webpage.
 
         // css selector to find the cookie accept button
-        private static readonly Tuple<string, By> CssSelectorCookieAccept = 
+        private static readonly Tuple<string, By> CssSelectorCookieAccept =
             new(nameof(CssSelectorCookieAccept),
                 By.CssSelector("[data-testid = 'cookie-policy-manage-dialog-accept-button']"));
 
@@ -68,11 +73,12 @@ namespace FacebookAutomation
             new(nameof(FindGroupMemberSelector),
                 By.XPath("//label //input[contains(@placeholder, 'Ein Mitglied finden') and contains(@type,'text')]"));
 
-        //
-        // //div //span //span //a[@aria-label and contains(@href,'/groups/430861494657177/user')]
-        // beinhaltet link, findet so aber 2 Elemente
-        //a[@role='link' and @target='_blank' and contains(@href,'youtube') and contains(@href,'PyAexdhNXjY')] 
-
+        // selector to find all elements that represent a group member must be build depending on group
+        private Tuple<string, By> BuildSelectorForAllGettingAllMembers(string groupId)
+        {
+            return new("GetAllGroupMembersSelector",
+                       By.XPath($"//div //span //span //a[@aria-label and contains(@href,'/groups/{groupId}/user')]"));
+        }
 
         // id selector to find input box for email
         private static readonly By IdSelectorEmail =
@@ -128,7 +134,7 @@ namespace FacebookAutomation
                 Thread.Sleep(TimeSpan.FromSeconds(1));
 
                 // Accept the Cookies and what not
-                ClickElementAndWaitForExcludingFromDom(this.webDriver, CssSelectorCookieAccept);
+                ClickElementAndWaitForExcludingFromDom(CssSelectorCookieAccept);
 
                 // Find the username field (Facebook calls it "email") and enter value
                 var input = this.webDriver.FindElement(IdSelectorEmail);
@@ -139,7 +145,7 @@ namespace FacebookAutomation
                 input.SendKeys(password);
 
                 // Click on the login button
-                ClickElementAndWaitForExcludingFromDom(this.webDriver, CssSelectorLogInButton);
+                ClickElementAndWaitForExcludingFromDom(CssSelectorLogInButton);
             }
             catch (Exception e)
             {
@@ -165,19 +171,19 @@ namespace FacebookAutomation
                 this.webDriver.Url = $"https://www.facebook.com/groups/{fbGroup.GroupId}";
 
                 // Wait until that post to group thing was hung into the dom
-                if (!RepeatFunction(WaitForElementToAppear, this.webDriver, OpenPostToGroupDialogSelector))
+                if (!RepeatFunction(WaitForElementToAppear, OpenPostToGroupDialogSelector))
                 {
                     return false;
                 }
 
                 // Open the dialog for posting content
-                if (!RepeatFunction(ClickAndWaitForClickableElement, this.webDriver, OpenPostToGroupDialogSelector))
+                if (!RepeatFunction(ClickAndWaitForClickableElement, OpenPostToGroupDialogSelector))
                 {
                     return false;
                 }
 
                 // Wait until dialog is open by checking for existence of button "Posten"
-                if (!RepeatFunction(WaitForElementToAppear, this.webDriver, PostToGroupButtonSelector))
+                if (!RepeatFunction(WaitForElementToAppear, PostToGroupButtonSelector))
                 {
                     return false;
                 }
@@ -187,13 +193,13 @@ namespace FacebookAutomation
                 sendKeysAction.Perform();
 
                 // Wait for youtube preview box to appear
-                if (!RepeatFunction(WaitForElementToAppear, this.webDriver, YoutubePreviewBoxSelector))
+                if (!RepeatFunction(WaitForElementToAppear, YoutubePreviewBoxSelector))
                 {
                     return false;
                 }
 
                 // Click post to group and wait until box was excluded from dom
-                if (!RepeatFunction(ClickElementAndWaitForExcludingFromDom, this.webDriver, PostToGroupButtonSelector))
+                if (!RepeatFunction(ClickElementAndWaitForExcludingFromDom, PostToGroupButtonSelector))
                 {
                     return false;
                 }
@@ -206,21 +212,75 @@ namespace FacebookAutomation
             return true;
         }
 
-        public bool UpdateUserDataBase(Group fbGroup)
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fbGroup"></param>
+        /// <returns></returns>
+        public Dictionary<string, FbUser> GetGroupMembers(Group fbGroup)
         {
             // Navigate to group members
             // https://www.facebook.com/groups/{group_ID}/members
             this.webDriver.Url = $"https://www.facebook.com/groups/{fbGroup.GroupId}/members";
 
             // Wait until that post to group thing was hung into the dom
-            if (!RepeatFunction(WaitForElementToAppear, this.webDriver, FindGroupMemberSelector))
+            if (!RepeatFunction(WaitForElementToAppear, FindGroupMemberSelector))
             {
-                return false;
+                this.logger.LogError("Couldn't find FindGroupMemberSelector");
+                return null;
             }
 
+            // A very ugly business to get to the end of the LoadOnDemand list of group members. Of course, one could also have asked for the
+            // temporary and last element in the DOM. This element is displayed during the loading process.
+            IJavaScriptExecutor js = (IJavaScriptExecutor)this.webDriver;
+            var retryCounter = 0;
+            do
+            {
+                var scrollHeightBefore = (long)js.ExecuteScript("return document.documentElement.scrollHeight");
+                js.ExecuteScript("window.scrollTo(0, document.body.scrollHeight)");
+                Thread.Sleep(TimeSpan.FromMilliseconds(500));
+                var scrollHeightAfter = (long)js.ExecuteScript("return document.documentElement.scrollHeight");
 
+                if (scrollHeightAfter <= scrollHeightBefore)
+                {
+                    retryCounter++;
+                }
+                else
+                {
+                    retryCounter = 0;
+                }
 
-            return true;
+                this.logger.LogDebug($"Scroll height before: {scrollHeightBefore} and after: {scrollHeightAfter}. Retry count is: {retryCounter}");
+            } while (retryCounter < 10);
+
+            // Once all these members are loaded, we can pick out the individual elements and save the information.
+            var elementLocator = BuildSelectorForAllGettingAllMembers(fbGroup.GroupId);
+            var wait = new WebDriverWait(this.webDriver, TimeSpan.FromSeconds(10));
+            var elements = this.webDriver.FindElements(elementLocator.Item2);
+
+            Dictionary<string, FbUser> myDict = new Dictionary<string, FbUser>();
+            foreach (var webElement in elements)
+            {
+                var userName = Regex.Unescape($@"{webElement.GetAttribute("aria-label")}");
+                var href = webElement.GetAttribute("href").Split("/");
+
+                myDict[href[6]] = new FbUser
+                                  {
+                                      Id = href[6],
+                                      Name = userName,
+                                      Groups = new List<GroupInfo>
+                                               {
+                                                   new()
+                                                   {
+                                                       GroupId = fbGroup.GroupId,
+                                                       GroupName = fbGroup.GroupName
+                                                   }
+                                               }
+                                  };
+            }
+
+            return myDict;
         }
 
         /// <summary>
@@ -237,12 +297,12 @@ namespace FacebookAutomation
         /// the DOM anymore.
         /// In other words this method waits after clicking until you are logged in.
         /// </summary>
-        private bool ClickElementAndWaitForExcludingFromDom(IWebDriver driver, Tuple<string, By> elementLocator, int timeOut = 10)
+        private bool ClickElementAndWaitForExcludingFromDom(Tuple<string, By> elementLocator, int timeOut = 10)
         {
             try
             {
-                var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
-                var elements = driver.FindElements(elementLocator.Item2);
+                var wait = new WebDriverWait(this.webDriver, TimeSpan.FromSeconds(timeOut));
+                var elements = this.webDriver.FindElements(elementLocator.Item2);
                 if (elements.Count == 0)
                 {
                     throw new NoSuchElementException(
@@ -260,7 +320,7 @@ namespace FacebookAutomation
                 this.logger.LogError(GetLogMessage(e, elementLocator));
                 return false;
             }
-            
+
             Thread.Sleep(TimeSpan.FromSeconds(2));
             return true;
         }
@@ -268,11 +328,11 @@ namespace FacebookAutomation
         /// <summary>
         /// Waits for an element to appear in the DOM.
         /// </summary>
-        private bool WaitForElementToAppear(IWebDriver driver, Tuple<string, By> elementLocator, int timeOut = 10)
+        private bool WaitForElementToAppear(Tuple<string, By> elementLocator, int timeOut = 10)
         {
             try
             {
-                var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
+                var wait = new WebDriverWait(this.webDriver, TimeSpan.FromSeconds(timeOut));
                 wait.Until(ExpectedConditions.ElementExists(elementLocator.Item2));
             }
             catch (Exception e)
@@ -289,12 +349,12 @@ namespace FacebookAutomation
         /// Unclear.
         /// Clicks an element and waits until its... clickable?
         /// </summary>
-        private bool ClickAndWaitForClickableElement(IWebDriver driver, Tuple<string, By> elementLocator, int timeOut = 10)
+        private bool ClickAndWaitForClickableElement(Tuple<string, By> elementLocator, int timeOut = 10)
         {
             try
             {
-                var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
-                var elements = driver.FindElements(elementLocator.Item2);
+                var wait = new WebDriverWait(this.webDriver, TimeSpan.FromSeconds(timeOut));
+                var elements = this.webDriver.FindElements(elementLocator.Item2);
                 if (elements.Count == 0)
                 {
                     throw new NoSuchElementException(
@@ -332,9 +392,8 @@ namespace FacebookAutomation
         /// <param name="elementSelector">Function argument 2</param>
         /// <param name="timeout">Function argument 3</param>
         /// <returns></returns>
-        private bool RepeatFunction(Func<IWebDriver, Tuple<string, By>, int, bool> function, 
-                                    IWebDriver driver, 
-                                    Tuple<string, By> elementSelector, 
+        private bool RepeatFunction(Func<Tuple<string, By>, int, bool> function,
+                                    Tuple<string, By> elementSelector,
                                     int timeout = 10,
                                     int repeatCount = 2)
         {
@@ -342,7 +401,7 @@ namespace FacebookAutomation
             var result = false;
             while (counter < repeatCount && result != true)
             {
-                result = function(driver, elementSelector, timeout);
+                result = function(elementSelector, timeout);
                 counter++;
             }
             return result;
@@ -357,11 +416,11 @@ namespace FacebookAutomation
         /// <param name="newContent"></param>
         /// <param name="timeOut"></param>
         /// <exception cref="NoSuchElementException"></exception>
-        private void FindSpanAndReplaceContent(IWebDriver driver, string content, string newContent, int timeOut = 10)
+        private void FindSpanAndReplaceContent(string content, string newContent, int timeOut = 10)
         {
             var elementLocator = By.XPath($"//span[contains(text(),'{content}')]");
-            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeOut));
-            var elements = driver.FindElements(elementLocator);
+            var wait = new WebDriverWait(this.webDriver, TimeSpan.FromSeconds(timeOut));
+            var elements = this.webDriver.FindElements(elementLocator);
             if (elements.Count == 0)
             {
                 throw new NoSuchElementException(
@@ -369,7 +428,7 @@ namespace FacebookAutomation
             }
             var element = elements.First(e => e.Displayed);
 
-            driver.ExecuteJavaScript($"arguments[0].innerText = '{newContent}'", element);
+            this.webDriver.ExecuteJavaScript($"arguments[0].innerText = '{newContent}'", element);
 
             // Das hier brauchts vermutlich nicht.
             // Releases when element isn't part of the DOM anymore (Dialog i.g.).

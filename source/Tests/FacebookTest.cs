@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Common;
 using FacebookAutomation;
@@ -91,6 +93,29 @@ namespace Tests
             File.WriteAllText(pathToListFile1, string.Empty);
             var fbManager1 = new FbManager(WorkFolder, facebookConfig);
             fbManager1.PrepareAndSendToGroups(pathToListFile1, facebookConfig.TestGroups, true);
+        }
+
+        [TestMethod]
+        public void TestGroupMembers()
+        {
+            var logger = new Logger("TestFacebookLogFile.log");
+            var facebook = new FbAutomation(WorkFolder, logger);
+            var facebookConfig = BotConfig.LoadFromJsonFile(@"mybotconfig.json").FacebookConfig;
+            var fbGroupSmallBM = facebookConfig.TaskGroups_smallVinylGroup[0];
+            var fbGroupSmallSkyrim = facebookConfig.Skyrimgroups[0];
+
+            facebook.Login(facebookConfig.Email, facebookConfig.Pw);
+            var dictSmallVinylGroup = facebook.GetGroupMembers(fbGroupSmallSkyrim);
+            facebook.Dispose();
+
+
+            var serializerOptions = new JsonSerializerOptions
+                                    {
+                                        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                                        WriteIndented = true,
+
+                                    };
+            File.WriteAllText($"{fbGroupSmallSkyrim.GroupName}.json", JsonSerializer.Serialize(dictSmallVinylGroup, serializerOptions));
         }
     }
 }

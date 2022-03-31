@@ -89,7 +89,11 @@ namespace Common
                 Directory.CreateDirectory(subfolderFullPath);
             }
 
-            File.WriteAllText(videoFileFullPath, JsonSerializer.Serialize(videoMetaData));
+            var serializerOptions = new JsonSerializerOptions
+                     {
+                         WriteIndented = true
+                     };
+            File.WriteAllText(videoFileFullPath, JsonSerializer.Serialize(videoMetaData, serializerOptions));
         }
 
         /// <summary>
